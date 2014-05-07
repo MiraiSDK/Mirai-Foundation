@@ -77,6 +77,7 @@
  *	Stuff for setting the sockets into non-blocking mode.
  */
 #if defined(__POSIX_SOURCE)\
+        || defined(__ANDROID__)\
         || defined(__EXT_POSIX1_198808)\
         || defined(O_NONBLOCK)
 #define NBLK_OPT     O_NONBLOCK
