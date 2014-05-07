@@ -4929,6 +4929,7 @@
 				LIBRARY_SEARCH_PATHS = "";
 				MACOSX_DEPLOYMENT_TARGET = "";
 				OTHER_CFLAGS = (
+					"$(inherited)",
 					"-DGNUSTEP",
 					"-fgnu-runtime",
 					"-pthread",
@@ -4969,6 +4970,7 @@
 				LIBRARY_SEARCH_PATHS = "";
 				MACOSX_DEPLOYMENT_TARGET = "";
 				OTHER_CFLAGS = (
+					"$(inherited)",
 					"-DGNUSTEP",
 					"-fgnu-runtime",
 					"-pthread",

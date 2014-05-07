@@ -160,6 +160,11 @@ GSDomainFromDefaultLocale(void)
 	   forKey: NSTimeFormatString];
 #endif /* HAVE_LANGINFO_H */
 
+  /**
+   * Android define an empty struct lconv and
+   * localeconv is just define in locale.h but don't exist in libc
+   */
+#ifndef __ANDROID__
   lconv = localeconv();
 
   /* Currency Information */
@@ -194,6 +199,7 @@ GSDomainFromDefaultLocale(void)
       [dict setObject: ToString(lconv->thousands_sep)
 	       forKey: NSThousandsSeparator];
     }
+#endif /* __ANDROID__ */
 
   /* FIXME: Get currency format from localeconv */
 

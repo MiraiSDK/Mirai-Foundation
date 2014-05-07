@@ -15,6 +15,7 @@ DEPLOYMENT_LOCATION = YES
 DSTROOT = /
 INSTALL_PATH = /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/FakeMacOSX10.9.sdk/System/Library/Frameworks/
 HEADER_SEARCH_PATHS=$(inherited) $(SDK_ROOT)/usr/include/ $(SDK_ROOT)/usr/include/libxml2
+OTHER_CFLAGS = $(inherited) -D__ANDROID__ 
 OTHER_LDFLAGS= $(inherited) -shared -Wl,-z,defs $(SDK_LIB_PATH)/libffi.a $(SDK_LIB_PATH)/libiconv.a $(SDK_LIB_PATH)/libxml2.a -lgnustl_shared -lobjc -lobjc -lm -lz -v
 
 LD_DEPENDENCY_INFO_FILE= 
