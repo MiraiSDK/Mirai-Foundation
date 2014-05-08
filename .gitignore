@@ -1,0 +1,17 @@
+/base.make
+
+config.log
+config.mak
+config.status
+
+obj
+
+/Source/config.h
+
+/Source/dynamic-load.h
+
+/Source/GNUstepBase/
+
+/SSL/config.h
+
+/Source/Info-gnustep.plist

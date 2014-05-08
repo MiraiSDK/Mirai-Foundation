@@ -1821,7 +1821,6 @@
 		18FE20611628550100389A13 /* TestInfo */ = {isa = PBXFileReference; lastKnownFileType = text; path = TestInfo; sourceTree = "<group>"; };
 		18FE20621628550100389A13 /* Unicode.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = Unicode.m; sourceTree = "<group>"; };
 		43A81304191A2BFB00E3DFA5 /* Foundation.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Foundation.framework; sourceTree = BUILT_PRODUCTS_DIR; };
-		43A81305191A2BFB00E3DFA5 /* Foundation copy-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; name = "Foundation copy-Info.plist"; path = "/Users/chyhfj/Development/gnubase/trunk/Foundation copy-Info.plist"; sourceTree = "<absolute>"; };
 		43A81307191A2CDB00E3DFA5 /* Android.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Android.xcconfig; sourceTree = "<group>"; };
 		43A81308191A391C00E3DFA5 /* NSKeyValueObserving.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = NSKeyValueObserving.m; path = Source/NSKeyValueObserving.m; sourceTree = SOURCE_ROOT; };
 		AD197BFF189A4D5F000F6CF9 /* NSInvocation.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = NSInvocation.m; sourceTree = "<group>"; };
@@ -2299,7 +2298,6 @@
 				1837D9C51652D0FF00197E53 /* Tools */,
 				18906E421610BC4C0003C892 /* Products */,
 				18906E431610BC4C0003C892 /* Libraries */,
-				43A81305191A2BFB00E3DFA5 /* Foundation copy-Info.plist */,
 			);
 			sourceTree = "<group>";
 		};

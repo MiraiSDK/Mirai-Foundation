@@ -67,14 +67,16 @@ include ./Version
 SUBPROJECTS = Source
 ifeq ($(GNUSTEP_BASE_HAVE_GNUTLS), 0)
 ifneq ($(GNUSTEP_TARGET_OS), mingw32)
-  SUBPROJECTS += SSL
+  #SUBPROJECTS += SSL
 endif
 endif
-SUBPROJECTS += Tools NSTimeZones Resources Tests
+#SUBPROJECTS += Tools NSTimeZones Resources Tests
+SUBPROJECTS += NSTimeZones Resources
+
 
 -include Makefile.preamble
 
 include $(GNUSTEP_MAKEFILES)/aggregate.make
-include $(GNUSTEP_MAKEFILES)/Master/deb.make
+#include $(GNUSTEP_MAKEFILES)/Master/deb.make
 
 -include Makefile.postamble
