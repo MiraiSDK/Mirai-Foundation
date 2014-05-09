@@ -195,6 +195,15 @@ GS_EXPORT void	NSLogv(NSString *format, va_list args) NS_FORMAT_FUNCTION(1,0);
 #ifndef nil
 #define nil		0
 #endif
+    
+//FIXME: clang built-in supported NS_ENUM, we should not define here
+#ifndef NS_ENUM
+#define NS_ENUM(_type, _name) enum _name : _type _name; enum _name : _type
+#endif
+    
+#ifndef NS_OPTIONS
+#define NS_OPTIONS(_type, _name) enum _name : _type _name; enum _name : _type
+#endif
 
 /**
  * Contains values <code>NSOrderedSame</code>, <code>NSOrderedAscending</code>
