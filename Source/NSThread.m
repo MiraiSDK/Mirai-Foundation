@@ -499,6 +499,12 @@ unregisterActiveThread(NSThread *thread)
   return GSCurrentThread();
 }
 
+//FIXME: workaround for android
++ (void)setCurrentThreadAsMainThread
+{
+    defaultThread = [self currentThread];
+}
+
 + (void) detachNewThreadSelector: (SEL)aSelector
 		        toTarget: (id)aTarget
                       withObject: (id)anArgument
