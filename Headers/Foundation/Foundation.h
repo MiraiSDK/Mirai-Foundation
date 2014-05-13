@@ -145,4 +145,6 @@
 #import	<Foundation/NSXMLParser.h>
 #import	<Foundation/NSZone.h>
 
+#import <dispatch/dispatch.h>
+
 #endif /* __Foundation_h_GNUSTEP_BASE_INCLUDE */
