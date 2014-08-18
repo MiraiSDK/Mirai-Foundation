@@ -297,6 +297,10 @@ typedef	struct {
 // because they also don't support blocks).
 #if __has_include(<objc/block_runtime.h>)
 #  include <objc/block_runtime.h>
+#elif __has_include(<objc/blocks_runtime.h>)
+#  include <objc/blocks_runtime.h>
+#elif
+#	warning missing  include block runtime
 #endif
 
 #ifndef __WIN32__
