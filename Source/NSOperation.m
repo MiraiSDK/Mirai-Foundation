@@ -899,7 +899,12 @@ static NSOperationQueue *mainQueue = nil;
       [internal->waiting addObject: object];
     }
   [internal->lock unlock];
-  [self _execute];
+    
+    if (self == mainQueue) {
+        [self _mainQueueExecute];
+    } else {
+        [self _execute];
+    }
 }
 
 - (void) _thread
@@ -972,6 +977,79 @@ static NSOperationQueue *mainQueue = nil;
   [internal->lock unlock];
   [pool release];
   [NSThread exit];
+}
+
+- (void)_main_thread
+{
+    NSAutoreleasePool	*pool = [NSAutoreleasePool new];
+
+    NSOperation	*op;
+
+    if ([internal->starting count] > 0)
+	{
+        op = [internal->starting objectAtIndex: 0];
+        [internal->starting removeObjectAtIndex: 0];
+	}
+    else
+	{
+        op = nil;
+	}
+    
+    if (nil != op)
+	{
+        NS_DURING
+	    {
+            NSAutoreleasePool	*opPool = [NSAutoreleasePool new];
+            
+            if (NO == [op isCancelled])
+            {
+                [op main];
+            }
+            [opPool release];
+	    }
+        NS_HANDLER
+	    {
+            NSLog(@"Problem running operation %@ ... %@",
+                  op, localException);
+	    }
+        NS_ENDHANDLER
+        [op _finish];
+	}
+    
+    [pool release];
+}
+
+- (void)_mainQueueExecute
+{
+    [internal->lock lock];
+
+    while (NO == [self isSuspended]
+           && [internal->waiting count] > 0)
+    {
+        NSOperation	*op;
+
+        /* Make sure we have a sorted queue of operations waiting to execute.
+         */
+        [internal->waiting sortUsingFunction: sortFunc context: 0];
+
+        op = [internal->waiting objectAtIndex: 0];
+        [internal->waiting removeObjectAtIndex: 0];
+        [op addObserver: self
+             forKeyPath: @"isFinished"
+                options: NSKeyValueObservingOptionNew
+                context: NULL];
+        internal->executing++;
+
+        NSUInteger	pending;
+        
+        pending = [internal->starting count];
+        [internal->starting addObject: op];
+
+        [self performSelectorOnMainThread:@selector(_main_thread) withObject:nil waitUntilDone:NO];
+
+    }
+    [internal->lock unlock];
+
 }
 
 /* Check for operations which can be executed and start them.
