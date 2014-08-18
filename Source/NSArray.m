@@ -2025,7 +2025,11 @@ compare(id elem1, id elem2, void* context)
 
 - (void) setObject: (id)anObject atIndexedSubscript: (size_t)anIndex
 {
-  [self replaceObjectAtIndex: (NSUInteger)anIndex withObject: anObject];
+    if ([self count] == anIndex) {
+        [self addObject:anObject];
+    } else {
+        [self replaceObjectAtIndex: (NSUInteger)anIndex withObject: anObject];
+    }
 }
 
 /** Replaces the values in the receiver at the locations given by the
