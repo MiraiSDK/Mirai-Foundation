@@ -2,4 +2,4 @@
 
 . /Users/chyhfj/Development/MiraSDK/Products/android/android-toolchain-arm/sysroot/usr/share/GNUstep/Makefiles/GNUstep.sh
 
-LIBS="-lgnustl_shared" CFLAGS="-DU_STATIC_IMPLEMENTATION" CPPFLAGS="-DU_STATIC_IMPLEMENTATION" ./configure --prefix=/Users/chyhfj/Development/MiraSDK/Products/android/android-toolchain-arm/sysroot/usr --host="arm-linux-androideabi" --enable-nxconstantstring --enable-pass-arguments -disable-xslt --disable-tls --with-xml-prefix=/Users/chyhfj/Development/MiraSDK/Products/android/android-toolchain-arm/sysroot/usr --disable-openssl
+LIBS="-lgnustl_shared" CFLAGS="-DU_STATIC_IMPLEMENTATION -fblocks" CPPFLAGS="-DU_STATIC_IMPLEMENTATION -fblocks" ./configure --prefix=/Users/chyhfj/Development/MiraSDK/Products/android/android-toolchain-arm/sysroot/usr --host="arm-linux-androideabi" --enable-nxconstantstring --enable-pass-arguments -disable-xslt --disable-tls --with-xml-prefix=/Users/chyhfj/Development/MiraSDK/Products/android/android-toolchain-arm/sysroot/usr --disable-openssl
