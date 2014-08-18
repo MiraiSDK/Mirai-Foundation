@@ -1733,6 +1733,11 @@ static id gs_weak_load(id obj)
     class_getName([self class]), self];
 }
 
+- (NSString *)localizedDescription
+{
+    return self.description;
+}
+
 /**
  * Returns a string describing the receiving class.  The default implementation
  * gives the name of the class by calling NSStringFromClass().
