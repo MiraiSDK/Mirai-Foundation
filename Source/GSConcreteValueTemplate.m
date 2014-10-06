@@ -29,6 +29,7 @@
 #if TYPE_ORDER == 0
 @interface GSNonretainedObjectValue : NSValue
 {
+  const char *_objCType;
   id data;
 }
 @end
@@ -38,6 +39,7 @@
 #elif TYPE_ORDER == 1
 @interface GSPointValue : NSValue
 {
+  const char *_objCType;
   NSPoint data;
 }
 @end
@@ -47,6 +49,7 @@
 #elif TYPE_ORDER == 2
 @interface GSPointerValue : NSValue
 {
+  const char *_objCType;
   void *data;
 }
 @end
@@ -57,6 +60,7 @@
 #  define GSTemplateValue	GSRangeValue
 @interface GSRangeValue : NSValue
 {
+  const char *_objCType;
   NSRange data;
 }
 @end
@@ -65,6 +69,7 @@
 #elif TYPE_ORDER == 4
 @interface GSRectValue : NSValue
 {
+  const char *_objCType;
   NSRect data;
 }
 @end
@@ -74,6 +79,7 @@
 #elif TYPE_ORDER == 5
 @interface GSSizeValue : NSValue
 {
+  const char *_objCType;
   NSSize data;
 }
 @end
@@ -113,6 +119,7 @@
   GSAssignZeroingWeakPointer((void**)&data, (void*)(*(id*)value));
 #else
   data = *(_dt *)value;
+  _objCType = type;
 #endif
   return self;
 }
@@ -233,8 +240,7 @@
 
 - (const char *)objCType
 {
-  typedef __typeof__(data) _dt;
-  return @encode(_dt);
+  return _objCType;
 }
 
 - (TYPE_NAME)TYPE_METHOD
