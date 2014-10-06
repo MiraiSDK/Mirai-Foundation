@@ -1335,7 +1335,7 @@ GSObjCGetVal(NSObject *self, const char *key, SEL sel,
 
                     v = (*imp)(self, sel);
                   }
-                val = [NSValue valueWithPoint: v];
+                val = [NSValue value:&v withObjCType:type];
               }
             else if (GSSelectorTypesMatch(@encode(NSRange), type))
               {
@@ -1352,7 +1352,7 @@ GSObjCGetVal(NSObject *self, const char *key, SEL sel,
 
                     v = (*imp)(self, sel);
                   }
-                val = [NSValue valueWithRange: v];
+                val = [NSValue value:&v withObjCType:type];
               }
             else if (GSSelectorTypesMatch(@encode(NSRect), type))
               {
@@ -1369,7 +1369,7 @@ GSObjCGetVal(NSObject *self, const char *key, SEL sel,
 
                     v = (*imp)(self, sel);
                   }
-                val = [NSValue valueWithRect: v];
+                val = [NSValue value:&v withObjCType:type];
               }
             else if (GSSelectorTypesMatch(@encode(NSSize), type))
               {
@@ -1386,7 +1386,7 @@ GSObjCGetVal(NSObject *self, const char *key, SEL sel,
 
                     v = (*imp)(self, sel);
                   }
-                val = [NSValue valueWithSize: v];
+                val = [NSValue value:&v withObjCType:type];
               }
             else
               {
