@@ -1335,7 +1335,8 @@ GSObjCGetVal(NSObject *self, const char *key, SEL sel,
 
                     v = (*imp)(self, sel);
                   }
-                val = [NSValue value:&v withObjCType:type];
+                  //FIXME: why use [NSValue value:&v withObjCType:type] will cause performance impact?
+                val = [NSValue valueWithPoint: v];
               }
             else if (GSSelectorTypesMatch(@encode(NSRange), type))
               {
