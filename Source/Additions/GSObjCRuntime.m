@@ -1320,7 +1320,9 @@ GSObjCGetVal(NSObject *self, const char *key, SEL sel,
             break;
 
           case _C_STRUCT_B:
-            if (GSSelectorTypesMatch(@encode(NSPoint), type))
+            if (GSSelectorTypesMatch(@encode(NSPoint), type) &&
+                strcmp(@encode(NSSize),type) != 0 &&
+                strncmp("{CGSize=", type, 8) != 0)
               {
                 NSPoint	v;
 
