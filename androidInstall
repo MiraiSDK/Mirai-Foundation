@@ -1,11 +1,11 @@
 #!/bin/bash
 
-. /Users/chyhfj/Development/MiraSDK/Products/android/android-toolchain-arm/sysroot/usr/share/GNUstep/Makefiles/GNUstep.sh
+. /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/Android18.sdk/usr/share/GNUstep/Makefiles/GNUstep.sh
 
 make debug=yes
 make install debug=yes
 
-pushd /Users/chyhfj/Development/MiraSDK/Products/android/android-toolchain-arm/sysroot/usr/lib
+pushd /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/Android18.sdk/usr/lib
 
 mv libgnustep-base.so.1.24.6 libgnustep-base.so
 rm libgnustep-base.so.1.24
