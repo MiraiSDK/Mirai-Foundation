@@ -1,7 +1,7 @@
 #!/bin/bash
 
 
-LIBS="-lgnustl_shared" CFLAGS="-DU_STATIC_IMPLEMENTATION -fblocks" CPPFLAGS="-DU_STATIC_IMPLEMENTATION -fblocks" ./configure \
+LIBS="-lgnustl_shared" CFLAGS="$ARCHFLAGS -DU_STATIC_IMPLEMENTATION -fblocks" CPPFLAGS="$ARCHFLAGS -DU_STATIC_IMPLEMENTATION -fblocks" LDFLAGS="$ARCHLDFLAGS" ./configure \
 	--prefix=$MIRAI_SDK_PREFIX --host="arm-linux-androideabi" --enable-nxconstantstring \
 	--enable-pass-arguments -disable-xslt --disable-tls \
 	--with-xml-prefix=$MIRAI_SDK_PREFIX --disable-openssl
