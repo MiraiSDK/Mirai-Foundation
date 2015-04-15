@@ -77,8 +77,10 @@ typedef	union {
   NSInteger 	nsi;
   NSUInteger	nsu;
 #endif
-#if	((GSUNION_TYPES) & GSUNION_PTR)
+#if	((GSUNION_TYPES) & GSUNION_PTR) || ((GSUNION_TYPES) & GSUNION_OBJ)
   void		*ptr;
+#endif
+#if	((GSUNION_TYPES) & GSUNION_PTR)
   const void	*cptr;
   char		*str;
   const char	*cstr;
