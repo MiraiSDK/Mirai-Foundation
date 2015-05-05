@@ -49,6 +49,8 @@ extern "C" {
 - (NSString *) predicateFormat;
 - (NSPredicate *) predicateWithSubstitutionVariables: (NSDictionary *)variables;
 
++ (NSPredicate*)predicateWithBlock:(BOOL (^)(id evaluatedObject, NSDictionary *bindings))block;
+
 @end
 
 @interface NSArray (NSPredicate)

@@ -314,6 +314,11 @@ extern void     GSPropertyListMake(id,NSDictionary*,BOOL,BOOL,unsigned,id*);
     }
 }
 
++ (NSPredicate*)predicateWithBlock:(BOOL (^)(id evaluatedObject, NSDictionary *bindings))block
+{
+    return nil;
+}
+
 // we don't ever instantiate NSPredicate
 
 - (id) copyWithZone: (NSZone *)z

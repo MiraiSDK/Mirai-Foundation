@@ -2022,8 +2022,14 @@ static NSUInteger	urlAlign;
   RELEASE(self);
 }
 
+- (BOOL)getResourceValue:(out id *)value forKey:(NSString *)key error:(out NSError **)error
+{
+    return NO;
+}
 @end
 
+NSString * const NSURLIsDirectoryKey = @"NSURLIsDirectory";
+NSString * const NSURLContentModificationDateKey = @"NSURLContentModificationDate";
 
 
 /**

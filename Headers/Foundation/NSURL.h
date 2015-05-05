@@ -383,6 +383,10 @@ GS_EXPORT NSString* const NSURLFileScheme;
 
 #endif
 
+/* Returns the resource value identified by a given resource key. This method first checks if the URL object already caches the resource value. If so, it returns the cached resource value to the caller. If not, then this method synchronously obtains the resource value from the backing store, adds the resource value to the URL object's cache, and returns the resource value to the caller. The type of the resource value varies by resource property (see resource key definitions). If this method returns YES and value is populated with nil, it means the resource property is not available for the specified resource and no errors occurred when determining the resource property was not available. If this method returns NO, the optional error is populated. This method is currently applicable only to URLs for file system resources. Symbol is present in iOS 4, but performs no operation.
+ */
+- (BOOL)getResourceValue:(out id *)value forKey:(NSString *)key error:(out NSError **)error;
+
 /**
  * Returns an NSURLHandle instance which may be used to write data to the
  * resource represented by the receiver URL, or read data from it.<br />
@@ -400,6 +404,9 @@ GS_EXPORT NSString* const NSURLFileScheme;
  * do not use URLs with users and passwords unless necessary.
  */
 - (NSString*) user;
+
+GS_EXPORT NSString * const NSURLIsDirectoryKey;
+GS_EXPORT NSString * const NSURLContentModificationDateKey;
 
 @end
 

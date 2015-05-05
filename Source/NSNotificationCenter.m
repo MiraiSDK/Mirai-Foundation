@@ -1146,6 +1146,9 @@ static NSNotificationCenter *default_center = nil;
 	  GSIMapRemoveKey(NAMED, (GSIMapKey)((id)name));
 	}
     }
+    if ([observer isKindOfClass:[GSNotificationObserver class]]) {
+        RELEASE(observer);
+    }
   unlockNCTable(TABLE);
 }
 

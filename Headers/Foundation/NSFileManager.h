@@ -198,6 +198,20 @@ typedef	uint32_t	OSType;
 #define OSTYPE_DECLARED
 #endif
 
+typedef NS_OPTIONS(NSUInteger, NSDirectoryEnumerationOptions) {
+    /* NSDirectoryEnumerationSkipsSubdirectoryDescendants causes the NSDirectoryEnumerator to perform a shallow enumeration and not descend into directories it encounters.
+     */
+    NSDirectoryEnumerationSkipsSubdirectoryDescendants = 1UL << 0,
+    
+    /* NSDirectoryEnumerationSkipsPackageDescendants will cause the NSDirectoryEnumerator to not descend into packages.
+     */
+    NSDirectoryEnumerationSkipsPackageDescendants      = 1UL << 1,
+    
+    /* NSDirectoryEnumerationSkipsHiddenFiles causes the NSDirectoryEnumerator to not enumerate hidden files.
+     */
+    NSDirectoryEnumerationSkipsHiddenFiles             = 1UL << 2
+};
+
 @interface NSFileManager : NSObject
 {
 #if	GS_EXPOSE(NSFileManager)
@@ -345,6 +359,12 @@ typedef	uint32_t	OSType;
 - (NSDirectoryEnumerator*) enumeratorAtPath: (NSString*)path;
 - (NSDictionary*) fileAttributesAtPath: (NSString*)path
 			  traverseLink: (BOOL)flag;
+
+/* enumeratorAtURL:includingPropertiesForKeys:options:errorHandler: returns an NSDirectoryEnumerator rooted at the provided directory URL. The NSDirectoryEnumerator returns NSURLs from the -nextObject method. The optional 'includingPropertiesForKeys' parameter indicates which resource properties should be pre-fetched and cached with each enumerated URL. The optional 'errorHandler' block argument is invoked when an error occurs. Parameters to the block are the URL on which an error occurred and the error. When the error handler returns YES, enumeration continues if possible. Enumeration stops immediately when the error handler returns NO.
+ 
+ If you wish to only receive the URLs and no other attributes, then pass '0' for 'options' and an empty NSArray ('[NSArray array]') for 'keys'. If you wish to have the property caches of the vended URLs pre-populated with a default set of attributes, then pass '0' for 'options' and 'nil' for 'keys'.
+ */
+- (NSDirectoryEnumerator *)enumeratorAtURL:(NSURL *)url includingPropertiesForKeys:(NSArray *)keys options:(NSDirectoryEnumerationOptions)mask errorHandler:(BOOL (^)(NSURL *url, NSError *error))handler;
 
 /**
  * Returns YES if a file (or directory etc) exists at the specified path.

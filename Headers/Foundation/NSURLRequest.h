@@ -43,10 +43,13 @@ extern "C" {
 
 enum
 {
-  NSURLRequestUseProtocolCachePolicy,
-  NSURLRequestReloadIgnoringCacheData,
-  NSURLRequestReturnCacheDataElseLoad,
-  NSURLRequestReturnCacheDataDontLoad
+  NSURLRequestUseProtocolCachePolicy = 0,
+  NSURLRequestReloadIgnoringLocalCacheData = 1,
+  NSURLRequestReloadIgnoringLocalAndRemoteCacheData = 4, // Unimplemented
+  NSURLRequestReloadIgnoringCacheData = NSURLRequestReloadIgnoringLocalCacheData,
+  NSURLRequestReturnCacheDataElseLoad = 2,
+  NSURLRequestReturnCacheDataDontLoad = 3,
+  NSURLRequestReloadRevalidatingCacheData = 5, // Unimplemented
 };
 /**
  * <deflist>
@@ -276,6 +279,25 @@ typedef NSUInteger NSURLRequestCachePolicy;
  */
 - (void) setValue: (NSString *)value forHTTPHeaderField: (NSString *)field;
 
+/*!
+ @method HTTPShouldUsePipelining
+ @abstract Sets whether the request should not wait for the previous response
+ before transmitting.
+ @param YES if the receiver should transmit before the previous response is
+ received.  NO to wait for the previous response before transmitting.
+ @discussion Calling this method with a YES value does not guarantee HTTP
+ pipelining behavior.  This method may have no effect if an HTTP proxy is
+ configured, or if the HTTP request uses an unsafe request method (e.g., POST
+ requests will not pipeline).  Pipelining behavior also may not begin until
+ the second request on a given TCP connection.  There may be other situations
+ where pipelining does not occur even though YES was set.
+ HTTP 1.1 allows the client to send multiple requests to the server without
+ waiting for a response.  Though HTTP 1.1 requires support for pipelining,
+ some servers report themselves as being HTTP 1.1 but do not support
+ pipelining (disconnecting, sending resources misordered, omitting part of
+ a resource, etc.).
+ */
+@property BOOL HTTPShouldUsePipelining;
 @end
 
 #if	defined(__cplusplus)

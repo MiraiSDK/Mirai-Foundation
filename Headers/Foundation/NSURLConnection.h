@@ -40,6 +40,7 @@ extern "C" {
 @class NSURLAuthenticationChallenge;
 @class NSURLRequest;
 @class NSURLResponse;
+@class NSRunLoop;
 
 /**
  */
@@ -86,9 +87,53 @@ extern "C" {
  */
 - (id) initWithRequest: (NSURLRequest *)request delegate: (id)delegate;
 
+- (instancetype)initWithRequest:(NSURLRequest *)request delegate:(id)delegate startImmediately:(BOOL)startImmediately;
+- (void)start;
+- (void)scheduleInRunLoop:(NSRunLoop *)aRunLoop forMode:(NSString *)mode;
+- (void)unscheduleFromRunLoop:(NSRunLoop *)aRunLoop forMode:(NSString *)mode;
+
+
 @end
 
+@class NSURLProtectionSpace;
+@class NSInputStream;
+@protocol NSURLConnectionDelegate <NSObject>
+@optional
+- (void)connection:(NSURLConnection *)connection didFailWithError:(NSError *)error;
+- (BOOL)connectionShouldUseCredentialStorage:(NSURLConnection *)connection;
+- (void)connection:(NSURLConnection *)connection willSendRequestForAuthenticationChallenge:(NSURLAuthenticationChallenge *)challenge;
+    
+//deprecated
+- (BOOL)connection:(NSURLConnection *)connection canAuthenticateAgainstProtectionSpace:(NSURLProtectionSpace *)protectionSpace;
+- (void)connection:(NSURLConnection *)connection didReceiveAuthenticationChallenge:(NSURLAuthenticationChallenge *)challenge ;
+- (void)connection:(NSURLConnection *)connection didCancelAuthenticationChallenge:(NSURLAuthenticationChallenge *)challenge ;
+@end
+    
+@protocol NSURLConnectionDataDelegate <NSURLConnectionDelegate>
+@optional
+- (NSURLRequest *)connection:(NSURLConnection *)connection willSendRequest:(NSURLRequest *)request redirectResponse:(NSURLResponse *)response;
+- (void)connection:(NSURLConnection *)connection didReceiveResponse:(NSURLResponse *)response;
 
+- (void)connection:(NSURLConnection *)connection didReceiveData:(NSData *)data;
+
+- (NSInputStream *)connection:(NSURLConnection *)connection needNewBodyStream:(NSURLRequest *)request;
+- (void)connection:(NSURLConnection *)connection   didSendBodyData:(NSInteger)bytesWritten
+totalBytesWritten:(NSInteger)totalBytesWritten
+totalBytesExpectedToWrite:(NSInteger)totalBytesExpectedToWrite;
+
+- (NSCachedURLResponse *)connection:(NSURLConnection *)connection willCacheResponse:(NSCachedURLResponse *)cachedResponse;
+
+- (void)connectionDidFinishLoading:(NSURLConnection *)connection;
+@end
+
+@protocol NSURLConnectionDownloadDelegate <NSURLConnectionDelegate>
+@optional
+- (void)connection:(NSURLConnection *)connection didWriteData:(long long)bytesWritten totalBytesWritten:(long long)totalBytesWritten expectedTotalBytes:(long long) expectedTotalBytes;
+- (void)connectionDidResumeDownloading:(NSURLConnection *)connection totalBytesWritten:(long long)totalBytesWritten expectedTotalBytes:(long long) expectedTotalBytes;
+
+@required
+- (void)connectionDidFinishDownloading:(NSURLConnection *)connection destinationURL:(NSURL *) destinationURL;
+@end
 
 /**
  * This category is an informal protocol specifying how an NSURLConnection

@@ -2225,6 +2225,12 @@ static NSStringEncoding	defaultEncoding;
   return AUTORELEASE([[NSString allocWithZone: NSDefaultMallocZone()]
     initWithBytes: string length: len encoding: defaultEncoding]);
 }
+
+- (NSDirectoryEnumerator *)enumeratorAtURL:(NSURL *)url includingPropertiesForKeys:(NSArray *)keys options:(NSDirectoryEnumerationOptions)mask errorHandler:(BOOL (^)(NSURL *url, NSError *error))handler
+{
+    return nil;
+}
+
 #endif
 
 @end /* NSFileManager */

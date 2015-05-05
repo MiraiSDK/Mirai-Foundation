@@ -191,7 +191,7 @@ typedef struct
     }
 }
 
-- (id) initWithRequest: (NSURLRequest *)request delegate: (id)delegate
+- (id) initWithRequest: (NSURLRequest *)request delegate: (id)delegate startImmediately:(BOOL)startImmediately
 {
   if ((self = [super init]) != nil)
     {
@@ -236,6 +236,24 @@ typedef struct
       this->_debug = GSDebugSet(@"NSURLConnection");
     }
   return self;
+}
+
+- (instancetype)initWithRequest:(NSURLRequest *)request delegate:(id)delegate
+{
+    return [self initWithRequest:request delegate:delegate startImmediately:NO];
+}
+
+- (void)start
+{
+    
+}
+- (void)scheduleInRunLoop:(NSRunLoop *)aRunLoop forMode:(NSString *)mode
+{
+    
+}
+- (void)unscheduleFromRunLoop:(NSRunLoop *)aRunLoop forMode:(NSString *)mode
+{
+    
 }
 
 @end
