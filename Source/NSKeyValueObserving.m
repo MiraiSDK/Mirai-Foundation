@@ -213,10 +213,18 @@ setup()
 
 - (void) dealloc
 {
-  // Turn off KVO for self ... then call the real dealloc implementation.
-  [self setObservationInfo: nil];
+    GSKVOInfo *info = RETAIN((GSKVOInfo *)[self observationInfo]);
+    Class origin = [self class];
+    
   object_setClass(self, [self class]);
   [self dealloc];
+    
+    if (info && ![info isUnobserved]) {
+        [NSException raise:NSInternalInconsistencyException format:@"An instance %p of class %@  was deallocated while key value observers were still registered with it. Current observation info:%@",self,origin,info];
+    }
+    
+    RELEASE(info);
+    
   GSNOSUPERDEALLOC;
 }
 
@@ -996,6 +1004,11 @@ cifframe_callback(ffi_cif *cif, void *retp, void **args, void *user)
   GSAssignZeroingWeakPointer((void**)&observer, nil);
 }
 #endif
+
+- (NSString *)description
+{
+    return [NSString stringWithFormat:@"<%@ %p> observer:%p context:%p options:%d",self.class,self,observer,context,options];
+}
 @end
 
 @implementation	GSKVOPathInfo
@@ -1086,6 +1099,11 @@ cifframe_callback(ffi_cif *cif, void *retp, void **args, void *user)
   [change setObject: newValue forKey: NSKeyValueChangeNewKey];
   [newValue release];
   [self release];
+}
+
+- (NSString *)description
+{
+    return [NSString stringWithFormat:@"<%@ %p> change:%@ observations:%@",self.class,self,change,observations];
 }
 @end
 
@@ -1237,6 +1255,11 @@ cifframe_callback(ffi_cif *cif, void *retp, void **args, void *user)
     }
   [iLock unlock];
   return result;
+}
+
+- (NSString *)description
+{
+    return [NSString stringWithFormat:@"<%@ %p> %@",self.class,self,NSStringFromMapTable(paths)];
 }
 
 /*
