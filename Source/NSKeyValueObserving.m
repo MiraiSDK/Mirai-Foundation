@@ -1602,6 +1602,15 @@ cifframe_callback(ffi_cif *cif, void *retp, void **args, void *user)
     [forwarder finalize];
 }
 
+- (void)removeObserver:(NSObject *)observer forKeyPath:(NSString *)keyPath context:(void *)context
+{
+    if (context) {
+        NSLog(@"%s context currently ignored..",__PRETTY_FUNCTION__);
+    }
+    
+    [self removeObserver:observer forKeyPath:keyPath];
+}
+
 @end
 
 /**
