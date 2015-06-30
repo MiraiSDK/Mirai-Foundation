@@ -220,7 +220,8 @@ setup()
   [self dealloc];
     
     if (info && ![info isUnobserved]) {
-        [NSException raise:NSInternalInconsistencyException format:@"An instance %p of class %@  was deallocated while key value observers were still registered with it. Current observation info:%@",self,origin,info];
+        //[NSException raise:NSInternalInconsistencyException format:@"An instance %p of class %@  was deallocated while key value observers were still registered with it. Current observation info:%@",self,origin,info];
+        NSLog(@"An instance %p of class %@  was deallocated while key value observers were still registered with it. Current observation info:%@",self,origin,info);
     }
     
     RELEASE(info);
