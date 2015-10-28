@@ -119,9 +119,17 @@
   GSAssignZeroingWeakPointer((void**)&data, (void*)(*(id*)value));
 #else
   data = *(_dt *)value;
-  _objCType = type;
+  _objCType = malloc(sizeof(char)*(strlen(type) + 1));
+  strcpy(_objCType, type);
 #endif
   return self;
+}
+
+- (void) dealloc
+{
+  if (_objCType) {
+    free(_objCType);
+  }
 }
 
 // Accessing Data
