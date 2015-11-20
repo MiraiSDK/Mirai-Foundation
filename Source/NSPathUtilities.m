@@ -668,9 +668,9 @@ static void ExtractValuesFromConfig(NSDictionary *config)
   ASSIGN_USER_PATH(gnustepUserLibrary, gnustepUserDirLibrary);
   ASSIGN_USER_PATH(gnustepUserLibraries, gnustepUserDirLibraries);
   ASSIGN_USER_PATH(gnustepUserHeaders, gnustepUserDirHeaders);
-  ASSIGN_USER_PATH(gnustepUserDocumentation, gnustepUserDocumentation);
-  ASSIGN_USER_PATH(gnustepUserDocumentationMan, gnustepUserDocumentationMan);
-  ASSIGN_USER_PATH(gnustepUserDocumentationInfo, gnustepUserDocumentationInfo);
+  ASSIGN_USER_PATH(gnustepUserDocumentation, gnustepUserDirDocumentation);
+  ASSIGN_USER_PATH(gnustepUserDocumentationMan, gnustepUserDirDocumentationMan);
+  ASSIGN_USER_PATH(gnustepUserDocumentationInfo, gnustepUserDirDocumentationInfo);
 
   /*
    * Try to ensure that essential user directories exist if we need to.
