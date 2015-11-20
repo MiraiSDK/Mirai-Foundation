@@ -1710,6 +1710,13 @@ NSUserName(void)
   return theUserName;
 }
 
+static NSString *_homeDirectory = nil;
+void GSSetHomeDirectory(const char *path)
+{
+    if (path != NULL) {
+        _homeDirectory = [NSString stringWithUTF8String:path];
+    }
+}
 
 /**
  * Return the caller's home directory as an NSString object.
@@ -1738,6 +1745,9 @@ NSString *
 NSHomeDirectoryForUser(NSString *loginName)
 {
   NSString	*s = nil;
+    if (_homeDirectory) {
+        return _homeDirectory;
+    }
 
 #if !defined(__MINGW__)
 #if     defined(HAVE_GETPWNAM_R)

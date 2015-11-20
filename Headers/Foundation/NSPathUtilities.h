@@ -88,6 +88,9 @@ GNUstepConfig(NSDictionary *newConfig);
 GS_EXPORT NSString*
 GSDefaultsRootForUser(NSString *userName);
 
+GS_EXPORT void
+GSSetHomeDirectory(const char *path);
+
 /**
  * The config dictionary passed to this function should be a
  * system-wide config as provided by GNUstepConfig() ... and
