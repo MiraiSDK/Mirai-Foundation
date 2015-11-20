@@ -175,6 +175,7 @@
 #if OS_API_VERSION(GS_API_MACOSX, GS_API_LATEST)
 #import	<Foundation/NSDictionary.h>
 #import	<Foundation/NSEnumerator.h>
+#import	<Foundation/NSPathUtilities.h>
 
 #if	defined(__cplusplus)
 extern "C" {
@@ -323,6 +324,8 @@ typedef NS_OPTIONS(NSUInteger, NSDirectoryEnumerationOptions) {
  */
 - (NSArray*) contentsOfDirectoryAtPath: (NSString*)path error: (NSError**)error;
 #endif
+
+- (NSArray *)URLsForDirectory:(NSSearchPathDirectory)directory inDomains:(NSSearchPathDomainMask)domainMask;
 
 - (BOOL) copyPath: (NSString*)source
 	   toPath: (NSString*)destination

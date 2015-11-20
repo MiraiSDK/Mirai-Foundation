@@ -12,7 +12,7 @@ checkError()
 CC=$CROSS_CLANG LIBS="-lgnustl_shared" CFLAGS="$ARCHFLAGS -DU_STATIC_IMPLEMENTATION -fblocks" CPPFLAGS="$ARCHFLAGS -DU_STATIC_IMPLEMENTATION -fblocks" LDFLAGS="$ARCHLDFLAGS" ./configure \
 	--prefix=$MIRAI_SDK_PREFIX --host="$HOSTEABI" --enable-nxconstantstring \
 	--enable-pass-arguments -disable-xslt --disable-tls \
-	--with-xml-prefix=$MIRAI_SDK_PREFIX --disable-openssl
+	--with-xml-prefix=$MIRAI_SDK_PREFIX --disable-openssl --with-default-config=./Android_GNUstep.conf
 checkError $? "configure gnustep-base failed"
 
 make debug=yes
