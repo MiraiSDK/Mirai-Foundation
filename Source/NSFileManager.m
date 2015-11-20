@@ -712,6 +712,18 @@ static NSStringEncoding	defaultEncoding;
   return result; 
 }
 
+- (NSArray *)URLsForDirectory:(NSSearchPathDirectory)directory inDomains:(NSSearchPathDomainMask)domainMask
+{
+    NSArray *paths = NSSearchPathForDirectoriesInDomains(directory, domainMask, YES);
+    NSMutableArray *array = [NSMutableArray array];
+    for (NSString *path in paths) {
+        NSURL *url = [NSURL fileURLWithPath:path];
+        [array addObject:url];
+    }
+    
+    return array;
+}
+
 /**
  * Creates a new directory and all intermediate directories. if flag is YES.
  * Creates only the last directory in the path if flag is NO.<br />
