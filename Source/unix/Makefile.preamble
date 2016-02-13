@@ -43,7 +43,7 @@ ADDITIONAL_CPPFLAGS = $(DEFS) \
 $(WARN_FLAGS)
 
 # Additional flags to pass to the Objective-C compiler
-#ADDITIONAL_OBJCFLAGS = 
+#ADDITIONAL_OBJCFLAGS = -static
 
 ifeq ($(GNUSTEP_TARGET_OS),mingw32)
   ADDITIONAL_OBJCFLAGS += -DBUILD_libgnustep_base_DLL=1
@@ -63,4 +63,4 @@ ifeq ($(FOUNDATION_LIB),gnu)
 endif
 
 # Additional LDFLAGS to pass to the linker
-ADDITIONAL_LDFLAGS = 
+ADDITIONAL_LDFLAGS = -static
