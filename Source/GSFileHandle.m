@@ -22,8 +22,6 @@
    Boston, MA 02111 USA.
    */
 
-#define	_FILE_OFFSET_BITS 64
-
 #import "common.h"
 #define	EXPOSE_NSFileHandle_IVARS	1
 #define	EXPOSE_GSFileHandle_IVARS	1
@@ -362,11 +360,14 @@ static GSTcpTune        *tune = nil;
   DESTROY(address);
   DESTROY(service);
   DESTROY(protocol);
-
-  [self finalize];
-
   DESTROY(readInfo);
   DESTROY(writeInfo);
+
+  /* Finalize *after* destroying readInfo and writeInfo so that, if the
+   * file handle needs to be closed, we don't generate any notifications
+   * containing the deallocated object.  Tnanks to david for this fix.
+   */
+  [self finalize];
   [super dealloc];
 }
 

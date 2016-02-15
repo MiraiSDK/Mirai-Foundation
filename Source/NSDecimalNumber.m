@@ -23,7 +23,7 @@
    Boston, MA 02111 USA.
 
    <title>NSDecimalNumber class reference</title>
-   $Date: 2013-08-22 23:44:54 +0800 (四, 22  8 2013) $ $Revision: 37003 $
+   $Date: 2015-10-08 17:13:32 +0800 (四, 08 10 2015) $ $Revision: 39042 $
    */
 
 #import "common.h"
@@ -324,6 +324,13 @@ static NSDecimalNumber *one;
 	llval = (long long)v;
 	break;
       }
+#if __GNUC__ > 2 && defined(_C_BOOL)
+    case _C_BOOL:
+      {
+	llval = (long long)((*(unsigned char *)value == 0) ? 0 : 1);
+	break;
+      }
+#endif
 #ifdef _C_LNGLNG
     case _C_LNGLNG:
 #else
