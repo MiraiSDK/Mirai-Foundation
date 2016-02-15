@@ -23,7 +23,7 @@
    Boston, MA 02111 USA.
 
    <title>NSProcessInfo class reference</title>
-   $Date: 2014-04-19 09:34:48 +0800 (六, 19  4 2014) $ $Revision: 37804 $
+   $Date: 2016-02-15 20:13:37 +0800 (一, 15  2 2016) $ $Revision: 39375 $
 */
 
 /*************************************************************************
@@ -129,7 +129,7 @@
  * or kit defines its own main function (as gnustep-base does).
  */
 #if GS_FAKE_MAIN
-#define _GNU_MISSING_MAIN_FUNCTION_CALL @"\nGNUSTEP Internal Error:\n\
+#define _GNU_MISSING_MAIN_FUNCTION_CALL "\nGNUSTEP Internal Error:\n\
 The private GNUstep function to establish the argv and environment\n\
 variables was not called.\n\
 Perhaps your program failed to #include <Foundation/NSObject.h> or\n\
@@ -137,12 +137,12 @@ Perhaps your program failed to #include <Foundation/NSObject.h> or\n\
 If that is not the problem, Please report the error to bug-gnustep@gnu.org.\n\n"
 #else
 #ifdef GS_PASS_ARGUMENTS
-#define _GNU_MISSING_MAIN_FUNCTION_CALL @"\nGNUSTEP Error:\n\
+#define _GNU_MISSING_MAIN_FUNCTION_CALL "\nGNUSTEP Error:\n\
 A call to NSProcessInfo +initializeWithArguments:... must be made\n\
 as the first ObjC statment in main. This function is used to \n\
 establish the argv and environment variables.\n"
 #else
-#define _GNU_MISSING_MAIN_FUNCTION_CALL @"\nGNUSTEP Internal Error:\n\
+#define _GNU_MISSING_MAIN_FUNCTION_CALL "\nGNUSTEP Internal Error:\n\
 The private GNUstep function to establish the argv and environment\n\
 variables was not called.\n\
 \n\
@@ -200,6 +200,10 @@ For more detailed assistance, please report the error to bug-gnustep@gnu.org.\n\
 /*************************************************************************
  *** Static global vars
  *************************************************************************/
+
+// The lock to protect shared process resources.
+static NSRecursiveLock  *procLock = nil;
+
 // The shared NSProcessInfo instance
 static NSProcessInfo	*_gnu_sharedProcessInfoObject = nil;
 
@@ -577,23 +581,23 @@ static char	**_gnu_noobjc_env = NULL;
   
   ifp = fopen(proc_file_name, "r");
   if (ifp == NULL)
-  {
-    fprintf(stderr, "Error: Failed to open the process info file:%s\n", 
-	    proc_file_name);
-    abort();
-  }
+    {
+      fprintf(stderr, "Error: Failed to open the process info file:%s\n", 
+              proc_file_name);
+      abort();
+    }
   
   fread(&pinfo, sizeof(pinfo), 1, ifp);
   fclose(ifp);
   
   vectors = (char **)pinfo.pr_envp;
   if (!vectors)
-  {
-    fprintf(stderr, "Error: for some reason, environ == NULL "
-      "during GNUstep base initialization\n"
-      "Please check the linking process\n");
-    abort();
-  }
+    {
+      fprintf(stderr, "Error: for some reason, environ == NULL "
+        "during GNUstep base initialization\n"
+        "Please check the linking process\n");
+      abort();
+    }
   
   /* copy the environment strings */
   for (count = 0; vectors[count]; count++)
@@ -602,11 +606,11 @@ static char	**_gnu_noobjc_env = NULL;
   if (!_gnu_noobjc_env)
     goto malloc_error;
   for (i = 0; i < count; i++)
-  {
-  	_gnu_noobjc_env[i] = (char *)strdup(vectors[i]);
-    if (!_gnu_noobjc_env[i])
-      goto malloc_error;
-  }
+    {
+      _gnu_noobjc_env[i] = (char *)strdup(vectors[i]);
+      if (!_gnu_noobjc_env[i])
+        goto malloc_error;
+    }
   _gnu_noobjc_env[i] = NULL;
 
   /* get the argument vectors */
@@ -899,12 +903,13 @@ _gnu_noobjc_free_vars(void)
 
 + (void) initialize
 {
+  if (nil == procLock) procLock = [NSRecursiveLock new];
   if (self == [NSProcessInfo class]
     && !_gnu_processName && !_gnu_arguments && !_gnu_environment)
     {
       if (_gnu_noobjc_argv == 0 || _gnu_noobjc_env == 0)
 	{
-          _NSLog_printf_handler(_GNU_MISSING_MAIN_FUNCTION_CALL);
+          fprintf(stderr, _GNU_MISSING_MAIN_FUNCTION_CALL);
           exit(1);
 	}
       _gnu_process_args(_gnu_noobjc_argc, _gnu_noobjc_argv, _gnu_noobjc_env);
@@ -917,6 +922,7 @@ _gnu_noobjc_free_vars(void)
 /* For WindowsAPI Library, we know the global variables (argc, etc) */
 + (void) initialize
 {
+  if (nil == procLock) procLock = [NSRecursiveLock new];
   if (self == [NSProcessInfo class]
     && !_gnu_processName && !_gnu_arguments && !_gnu_environment)
     {
@@ -929,6 +935,7 @@ extern int __libc_argc;
 extern char **__libc_argv;
 + (void) initialize
 {
+  if (nil == procLock) procLock = [NSRecursiveLock new];
   if (self == [NSProcessInfo class]
     && !_gnu_processName && !_gnu_arguments && !_gnu_environment)
     {
@@ -938,6 +945,10 @@ extern char **__libc_argv;
 
 
 #else
++ (void) initialize
+{
+  if (nil == procLock) procLock = [NSRecursiveLock new];
+}
 #ifndef GS_PASS_ARGUMENTS
 #undef main
 /* The gnustep_base_user_main function is declared 'weak' so that the linker
@@ -1001,14 +1012,14 @@ int main(int argc, char *argv[], char *env[])
   // We can't use NSAssert, which calls NSLog, which calls NSProcessInfo...
   if (!(_gnu_processName && _gnu_arguments && _gnu_environment))
     {
-      _NSLog_printf_handler(_GNU_MISSING_MAIN_FUNCTION_CALL);
+      fprintf(stderr, _GNU_MISSING_MAIN_FUNCTION_CALL);
       exit(1);
     }
 
   if (!_gnu_sharedProcessInfoObject)
     {
       _gnu_sharedProcessInfoObject = [[_NSConcreteProcessInfo alloc] init];
-      [gnustep_global_lock lock];
+      [procLock lock];
       if (mySet != nil)
 	{
 	  NSEnumerator	*e = [mySet objectEnumerator];
@@ -1022,7 +1033,7 @@ int main(int argc, char *argv[], char *env[])
 	  [mySet release];
 	  mySet = nil;
         }
-      [gnustep_global_lock unlock];
+      [procLock unlock];
     }
 
   return _gnu_sharedProcessInfoObject;
@@ -1065,19 +1076,30 @@ int main(int argc, char *argv[], char *env[])
   static unsigned long	counter = 0;
   unsigned long		count;
   static NSString	*host = nil;
+  NSString              *thost = nil;
   static int		pid;
+  int                   tpid;
   static unsigned long	start;
 
-  [gnustep_global_lock lock];
-  if (host == nil)
+  /* We obtain the host name and pid outside the locked region in case
+   * the lookup is slow or indirectly calls this method fromm another
+   * thread (as unlikely as that is ... some subclass/category could
+   * do it).
+   */
+  if (nil == host)
     {
-      pid = [self processIdentifier];
+      thost = [[self hostName] stringByReplacingString: @"." withString: @"_"];
+      tpid = [self processIdentifier];
+    }
+  [procLock lock];
+  if (nil == host)
+    {
       start = (unsigned long)GSPrivateTimeNow();
-      host = [[self hostName] stringByReplacingString: @"." withString: @"_"];
-      IF_NO_GC(RETAIN(host);)
+      ASSIGN(host, thost);
+      pid = tpid;
     }
   count = counter++;
-  [gnustep_global_lock unlock];
+  [procLock unlock];
 
   // $$$ The format of the string is not specified by the OpenStep
   // specification.
@@ -1449,10 +1471,10 @@ void
 GSInitializeProcess(int argc, char **argv, char **envp)
 {
   [NSProcessInfo class];
-  [gnustep_global_lock lock];
+  [procLock lock];
   fallbackInitialisation = YES;
   _gnu_process_args(argc, argv, envp);
-  [gnustep_global_lock unlock];
+  [procLock unlock];
 }
 
 @implementation	NSProcessInfo (GNUstep)

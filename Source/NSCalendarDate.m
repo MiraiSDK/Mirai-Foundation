@@ -25,7 +25,7 @@
    Boston, MA 02111 USA.
 
    <title>NSCalendarDate class reference</title>
-   $Date: 2014-02-13 18:41:55 +0800 (四, 13  2 2014) $ $Revision: 37683 $
+   $Date: 2015-05-03 00:44:02 +0800 (日, 03  5 2015) $ $Revision: 38472 $
    */
 
 #import "common.h"
@@ -1712,7 +1712,7 @@ static inline int getDigits(const char *from, char *to, int limit, BOOL *error)
   d = dayOfCommonEra(when);
   d -= GREGORIAN_REFERENCE;
   d *= 86400;
-  a = abs(d - (_seconds_since_ref + offset(_time_zone, self)));
+  a = fabs(d - (_seconds_since_ref + offset(_time_zone, self)));
   a = a / 3600;
   h = (NSInteger)a;
 
@@ -1737,7 +1737,7 @@ static inline int getDigits(const char *from, char *to, int limit, BOOL *error)
   d = dayOfCommonEra(when);
   d -= GREGORIAN_REFERENCE;
   d *= 86400;
-  a = abs(d - (_seconds_since_ref + offset(_time_zone, self)));
+  a = fabs(d - (_seconds_since_ref + offset(_time_zone, self)));
   b = a / 3600;
   h = (NSInteger)b;
   h = h * 3600;
@@ -1775,7 +1775,7 @@ static inline int getDigits(const char *from, char *to, int limit, BOOL *error)
   d = dayOfCommonEra(when);
   d -= GREGORIAN_REFERENCE;
   d *= 86400;
-  a = abs(d - (_seconds_since_ref + offset(_time_zone, self)));
+  a = fabs(d - (_seconds_since_ref + offset(_time_zone, self)));
   b = a / 3600;
   h = (NSInteger)b;
   h = h * 3600;

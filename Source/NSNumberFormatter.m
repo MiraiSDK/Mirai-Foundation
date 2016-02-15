@@ -24,7 +24,7 @@
    Boston, MA 02111 USA.
 
    <title>NSNumberFormatter class reference</title>
-   $Date: 2013-04-15 15:00:42 +0800 (一, 15  4 2013) $ $Revision: 36536 $
+   $Date: 2015-12-31 05:09:55 +0800 (四, 31 12 2015) $ $Revision: 39245 $
    */
 
 /* Unfortunately, libicu does not define the maximum values allowed for all
@@ -1100,7 +1100,7 @@ static NSUInteger _defaultBehavior = NSNumberFormatterBehavior10_4;
            * don't think it matters, because we don't bother with anything
            * smaller than int for NSNumbers
 	   */
-#if	defined(_C_BOOL)
+#if __GNUC__ > 2 && defined(_C_BOOL)
           case _C_BOOL:
             STRING_FROM_NUMBER(unum_format, (int)[anObject boolValue]);
             break;
@@ -1271,16 +1271,18 @@ static NSUInteger _defaultBehavior = NSNumberFormatterBehavior10_4;
       
       //sort out the padding for the integer part
       intPartRange = [useFormat rangeOfCharacterFromSet: placeHolders];
-      if (NSMaxRange(intPartRange) < ([useFormat length] - 1))
+      if (intPartRange.location != NSNotFound)
         {
+          int nextFormatCharLoc = intPartRange.location;
           while (([placeHolders characterIsMember:
-            [useFormat characterAtIndex: NSMaxRange(intPartRange)]]
+            [useFormat characterAtIndex: nextFormatCharLoc]]
             || [[useFormat substringWithRange:
-              NSMakeRange(NSMaxRange(intPartRange), 1)] isEqual:
+              NSMakeRange(nextFormatCharLoc, 1)] isEqual:
           defaultThousandsSeparator])
-            && NSMaxRange(intPartRange) < [useFormat length] - 1)
+            && nextFormatCharLoc < [useFormat length] - 1)
             {
               intPartRange.length++;
+              nextFormatCharLoc++;
             }
         }
       intPad = [[[useFormat substringWithRange: intPartRange]
@@ -1298,7 +1300,7 @@ static NSUInteger _defaultBehavior = NSNumberFormatterBehavior10_4;
           NSRange		ipRange;
 
           ipRange =
-            NSMakeRange(0, [intPad length] - [intPartString length] + 1);
+            NSMakeRange(0, [intPad length] - [intPartString length]);
           [intPartString insertString:
             [intPad substringWithRange: ipRange] atIndex: 0];
           [intPartString replaceOccurrencesOfString: @"_"

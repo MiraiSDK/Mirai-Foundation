@@ -26,7 +26,7 @@
    Boston, MA 02111 USA.
 
    <title>GSObjCRuntime function and macro reference</title>
-   $Date: 2014-03-25 21:49:30 +0800 (二, 25  3 2014) $ $Revision: 37764 $
+   $Date: 2015-10-08 17:13:32 +0800 (四, 08 10 2015) $ $Revision: 39042 $
    */
 
 #import "common.h"
@@ -1090,23 +1090,23 @@ GSObjCGetVal(NSObject *self, const char *key, SEL sel,
 	    }
 	    break;
 
-#if     defined(_C_BOOL)
+#if __GNUC__ > 2 && defined(_C_BOOL)
           case _C_BOOL:
             {
-              bool      v;
+              _Bool     v;
  
               if (sel == 0)
                 {
-                  v = *(bool *)((char *)self + offset);
+                  v = *(_Bool *)((char *)self + offset);
                 }
               else
                 {
-                  bool  (*imp)(id, SEL) =
-                    (bool (*)(id, SEL))[self methodForSelector: sel];
+                  _Bool (*imp)(id, SEL) =
+                    (_Bool (*)(id, SEL))[self methodForSelector: sel];
  
                   v = (*imp)(self, sel);
                 }
-              val = [NSNumber numberWithBool: v];
+              val = [NSNumber numberWithBool: (BOOL)v];
             }
             break;
 #endif
@@ -1555,21 +1555,21 @@ GSObjCSetVal(NSObject *self, const char *key, id val, SEL sel,
 	    }
 	    break;
 
-#if     defined(_C_BOOL)
+#if __GNUC__ > 2 && defined(_C_BOOL)
           case _C_BOOL:
             {
-              bool      v = [val boolValue];
+              _Bool     v = (_Bool)[val boolValue];
  
               if (sel == 0)
                 {
-                  bool *ptr = (bool*)((char *)self + offset);
+                  _Bool *ptr = (_Bool*)((char *)self + offset);
  
                   *ptr = v;
                 }
               else
                 {
-                  void  (*imp)(id, SEL, bool) =
-                    (void (*)(id, SEL, bool))[self methodForSelector: sel];
+                  void  (*imp)(id, SEL, _Bool) =
+                    (void (*)(id, SEL, _Bool))[self methodForSelector: sel];
  
                   (*imp)(self, sel, v);
                 }
@@ -2104,9 +2104,14 @@ GSClassSwizzle(id instance, Class newClass)
 {
   Class	oldClass = object_getClass(instance);
 
+  /* Only set if the old and new class differ
+   */
   if (oldClass != newClass)
     {
-#if     defined(GNUSTEP_BASE_LIBRARY)
+      /* NB.  The call to object_setClass() may not work (eg for a libobjc2
+       * 'small object', in which case the class is unchanged and we need
+       * to allow for that.
+       */
 # if	GS_WITH_GC
       /* We only do allocation counting for objects that can be
        * finalised - for other objects we have no way of decrementing
@@ -2118,22 +2123,26 @@ GSClassSwizzle(id instance, Class newClass)
 	   * accounting.
 	   */
           AREM(oldClass, instance);
-          AADD(newClass, instance);
-	}
-      else if (GSIsFinalizable(newClass))
+        }
+      object_setClass(instance, newClass);
+      newClass = object_getClass(instance);
+      if (GSIsFinalizable(newClass))
 	{
 	  /* New class is finalizable, so we must register the instance
 	   * for finalisation and do allocation acounting for it.
 	   */
 	  AADD(newClass, instance);
-	  GC_REGISTER_FINALIZER (instance, GSFinalize, NULL, NULL, NULL);
+          if (NO == GSIsFinalizable(oldClass))
+            {
+              GC_REGISTER_FINALIZER (instance, GSFinalize, NULL, NULL, NULL);
+            }
 	}
 # else
       AREM(oldClass, instance);
+      object_setClass(instance, newClass);
+      newClass = object_getClass(instance);
       AADD(newClass, instance);
 # endif	/* GS_WITH_GC */
-#endif	/* defined(GNUSTEP_BASE_LIBRARY) */
-      object_setClass(instance, newClass);
     }
 }
 

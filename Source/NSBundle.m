@@ -28,7 +28,7 @@
 
 
    <title>NSBundle class reference</title>
-   $Date: 2014-01-14 22:13:31 +0800 (二, 14  1 2014) $ $Revision: 37602 $
+   $Date: 2015-10-21 15:10:25 +0800 (三, 21 10 2015) $ $Revision: 39084 $
 */
 
 #define	EXPOSE_NSBundle_IVARS	1
@@ -173,8 +173,6 @@ static NSLock *pathCacheLock = nil;
 static NSMutableDictionary *pathCache = nil;
 
 @interface NSObject (PrivateFrameworks)
-+ (NSString*) frameworkEnv;
-+ (NSString*) frameworkPath;
 + (NSString*) frameworkVersion;
 + (NSString**) frameworkClasses;
 @end
