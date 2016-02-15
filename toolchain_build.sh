@@ -23,7 +23,7 @@ checkError $? "install gnustep-base failed"
 
 
 pushd $MIRAI_SDK_PREFIX/lib
-mv libgnustep-base.so.1.24.6 libgnustep-base.so
+mv libgnustep-base.so.1.24.8 libgnustep-base.so
 rm libgnustep-base.so.1.24
 ln -s libgnustep-base.so libFoundation.so
 popd
