@@ -23,7 +23,7 @@
    Boston, MA 02111 USA.
 
    <title>NSZone class reference</title>
-   $Date: 2012-09-03 21:36:45 +0800 (一, 03  9 2012) $ $Revision: 35503 $
+   $Date: 2015-08-05 00:23:22 +0800 (三, 05  8 2015) $ $Revision: 38854 $
 */
 
 /*  Design goals:
@@ -120,10 +120,13 @@ default_malloc (NSZone *zone, size_t size)
   void *mem;
 
   mem = malloc(size);
-  if (mem == NULL)
-    [NSException raise: NSMallocException
-                 format: @"Default zone has run out of memory"];
-  return mem;
+  if (mem != NULL)
+    {
+      return mem;
+    }
+  [NSException raise: NSMallocException
+              format: @"Default zone has run out of memory"];
+  return 0;
 }
 
 static void*
@@ -131,24 +134,14 @@ default_realloc (NSZone *zone, void *ptr, size_t size)
 {
   void *mem;
 
-  if (size == 0)
+  mem = realloc(ptr, size);
+  if (mem != NULL)
     {
-      free(ptr);
-      return NULL;
-    }
-  if (ptr == 0)
-    {
-      mem = malloc(size);
-      if (mem == NULL)
-	[NSException raise: NSMallocException
-		     format: @"Default zone has run out of memory"];
       return mem;
     }
-  mem = realloc(ptr, size);
-  if (mem == NULL)
-    [NSException raise: NSMallocException
-                 format: @"Default zone has run out of memory"];
-  return mem;
+  [NSException raise: NSMallocException
+              format: @"Default zone has run out of memory"];
+  return 0;
 }
 
 static void
@@ -271,7 +264,7 @@ NSCreateZone (NSUInteger start, NSUInteger gran, BOOL canFree)
   return &default_zone;
 }
 
-NSZone*
+inline NSZone*
 NSDefaultMallocZone (void)
 {
   return &default_zone;
@@ -443,7 +436,7 @@ NSCreateZone (NSUInteger start, NSUInteger gran, BOOL canFree)
   return &default_zone;
 }
 
-NSZone*
+inline NSZone*
 NSDefaultMallocZone (void)
 {
   return &default_zone;
@@ -1978,7 +1971,7 @@ NSCreateZone (NSUInteger start, NSUInteger gran, BOOL canFree)
       zone = malloc(sizeof(ffree_zone));
       if (zone == NULL)
         [NSException raise: NSMallocException
-                     format: @"No memory to create zone"];
+                    format: @"No memory to create zone"];
       zone->common.malloc = fmalloc;
       zone->common.realloc = frealloc;
       zone->common.free = ffree;
@@ -2001,7 +1994,7 @@ NSCreateZone (NSUInteger start, NSUInteger gran, BOOL canFree)
           pthread_mutex_destroy(&(zone->lock));
           free(zone);
           [NSException raise: NSMallocException
-                       format: @"No memory to create zone"];
+                      format: @"No memory to create zone"];
         }
       /*
        *	Set up block header.
@@ -2033,7 +2026,7 @@ NSCreateZone (NSUInteger start, NSUInteger gran, BOOL canFree)
       zone = malloc(sizeof(nfree_zone));
       if (zone == NULL)
         [NSException raise: NSMallocException
-                     format: @"No memory to create zone"];
+                    format: @"No memory to create zone"];
       zone->common.malloc = nmalloc;
       zone->common.realloc = nrealloc;
       zone->common.free = nfree;
@@ -2051,7 +2044,7 @@ NSCreateZone (NSUInteger start, NSUInteger gran, BOOL canFree)
           pthread_mutex_destroy(&(zone->lock));
           free(zone);
           [NSException raise: NSMallocException
-                       format: @"No memory to create zone"];
+                      format: @"No memory to create zone"];
         }
 
       block = zone->blocks;
@@ -2072,6 +2065,18 @@ NSCreateZone (NSUInteger start, NSUInteger gran, BOOL canFree)
 void*
 NSZoneCalloc (NSZone *zone, NSUInteger elems, NSUInteger bytes)
 {
+  void *mem;
+
+  if (0 == zone || NSDefaultMallocZone() == zone)
+    {
+      mem = calloc(elems, bytes);
+      if (mem != NULL)
+        {
+          return mem;
+        }
+      [NSException raise: NSMallocException
+                  format: @"Default zone has run out of memory"];
+    }
   return memset(NSZoneMalloc(zone, elems*bytes), 0, elems*bytes);
 }
 

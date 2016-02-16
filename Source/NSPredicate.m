@@ -213,7 +213,7 @@ extern void     GSPropertyListMake(id,NSDictionary*,BOOL,BOOL,unsigned,id*);
               case 'i':
                 ptr++;
                 [arr addObject: [NSNumber numberWithInt:
-                  va_arg(args, NSInteger)]];
+                  va_arg(args, int)]];
                 break;
 
               case 'o':
@@ -224,7 +224,7 @@ extern void     GSPropertyListMake(id,NSDictionary*,BOOL,BOOL,unsigned,id*);
               case 'X':
                 ptr++;
                 [arr addObject: [NSNumber numberWithUnsignedInt:
-                  va_arg(args, NSUInteger)]];
+                  va_arg(args, unsigned)]];
                 break;
 
               case 'e':
@@ -466,6 +466,7 @@ extern void     GSPropertyListMake(id,NSDictionary*,BOOL,BOOL,unsigned,id*);
   unsigned int count = [_subs count];
   NSMutableArray *esubs = [NSMutableArray arrayWithCapacity: count];
   unsigned int i;
+  NSPredicate  *p;
 
   for (i = 0; i < count; i++)
     {
@@ -473,7 +474,8 @@ extern void     GSPropertyListMake(id,NSDictionary*,BOOL,BOOL,unsigned,id*);
                             predicateWithSubstitutionVariables: variables]];
     }
 
-  return [[[self class] alloc] initWithType: _type subpredicates: esubs];
+  p = [[[self class] alloc] initWithType: _type subpredicates: esubs];
+  return AUTORELEASE(p);
 }
 
 - (Class) classForCoder

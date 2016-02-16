@@ -23,7 +23,7 @@
    Boston, MA 02111 USA.
 
    <title>NSDictionary class reference</title>
-   $Date: 2013-12-05 21:16:36 +0800 (四, 05 12 2013) $ $Revision: 37431 $
+   $Date: 2015-07-16 17:30:57 +0800 (四, 16  7 2015) $ $Revision: 38805 $
    */
 
 #import "common.h"
@@ -1228,6 +1228,32 @@ compareIt(id o1, id o2, void* context)
 {
   [self subclassResponsibility: _cmd];
   return 0;
+}
+
+- (NSUInteger) sizeInBytesExcluding: (NSHashTable*)exclude
+{
+  NSUInteger	size = [super sizeInBytesExcluding: exclude];
+
+  if (size > 0)
+    {
+      NSUInteger	count = [self count];
+
+      size += 3 * sizeof(void*) * count;
+      if (count > 0)
+        {
+	  NSEnumerator  *enumerator = [self keyEnumerator];
+	  NSObject	*k;
+
+	  while ((k = [enumerator nextObject]) != nil)
+	    {
+	      NSObject	*o = [self objectForKey: k];
+
+	      size += [k sizeInBytesExcluding: exclude];
+	      size += [o sizeInBytesExcluding: exclude];
+	    }
+	}
+    }
+  return size;
 }
 @end
 

@@ -21,7 +21,7 @@
    Software Foundation, Inc., 51 Franklin Street, Fifth Floor,
    Boston, MA 02111 USA.
 
-   $Date: 2014-01-26 21:50:26 +0800 (日, 26  1 2014) $ $Revision: 37637 $
+   $Date: 2015-10-08 17:13:32 +0800 (四, 08 10 2015) $ $Revision: 39042 $
 */
 
 #import "common.h"
@@ -582,6 +582,12 @@ cifframe_callback(ffi_cif *cif, void *retp, void **args, void *user)
                 imp = [[GSKVOSetter class]
                   instanceMethodForSelector: @selector(setterDouble:)];
                 break;
+#if __GNUC__ > 2 && defined(_C_BOOL)
+              case _C_BOOL:
+                imp = [[GSKVOSetter class]
+                  instanceMethodForSelector: @selector(setterChar:)];
+                break;
+#endif
               case _C_ID:
               case _C_CLASS:
               case _C_PTR:

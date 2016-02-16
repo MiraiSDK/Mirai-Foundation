@@ -22,7 +22,7 @@
    Boston, MA 02111 USA.
 
    <title>NSObject class reference</title>
-   $Date: 2014-01-19 00:04:34 +0800 (日, 19  1 2014) $ $Revision: 37614 $
+   $Date: 2015-10-04 01:11:00 +0800 (日, 04 10 2015) $ $Revision: 39022 $
    */
 
 /* On some versions of mingw we need to work around bad function declarations
@@ -41,6 +41,7 @@
 #import "Foundation/NSAutoreleasePool.h"
 #import "Foundation/NSArray.h"
 #import "Foundation/NSException.h"
+#import "Foundation/NSHashTable.h"
 #import "Foundation/NSPortCoder.h"
 #import "Foundation/NSDistantObject.h"
 #import "Foundation/NSThread.h"
@@ -337,7 +338,7 @@ GSAtomicIncrement(gsatomic_t X)
   int tmp;
 
   __asm__ __volatile__ (
-#if !defined(__mips64__)
+#if !defined(__mips64)
     "   .set  mips2  \n"
 #endif
     "0: ll    %0, %1 \n"
@@ -354,7 +355,7 @@ GSAtomicDecrement(gsatomic_t X)
   int tmp;
 
   __asm__ __volatile__ (
-#if !defined(__mips64__)
+#if !defined(__mips64)
     "   .set  mips2  \n"
 #endif
     "0: ll    %0, %1 \n"
@@ -1907,13 +1908,16 @@ static id gs_weak_load(id obj)
 - (NSUInteger) hash
 {
   /*
-   * Ideally we would shift left to lose any zero bits produced by the
-   * alignment of the object in memory ... but that depends on the
-   * processor architecture and the memory allocatiion implementation.
-   * In the absence of detailed information, pick a reasonable value
-   * assuming the object will be aligned to an eight byte boundary.
+   *  malloc() must return pointers aligned to point to any data type
    */
-  return (NSUInteger)(uintptr_t)self >> 3;
+#define MAXALIGN (__alignof__(_Complex long double))
+
+  static int shift = MAXALIGN==16 ? 4 : (MAXALIGN==8 ? 3 : 2);
+
+  /* We shift left to lose any zero bits produced by the
+   * alignment of the object in memory.
+   */
+  return (NSUInteger)((uintptr_t)self >> shift);
 }
 
 /**
@@ -2010,8 +2014,8 @@ static id gs_weak_load(id obj)
   if (!msg)
     {
       [NSException raise: NSGenericException
-		   format: @"invalid selector passed to %s",
-		     sel_getName(_cmd)];
+		   format: @"invalid selector '%s' passed to %s",
+		     sel_getName(aSelector), sel_getName(_cmd)];
       return nil;
     }
   return (*msg)(self, aSelector);
@@ -2023,7 +2027,7 @@ static id gs_weak_load(id obj)
  * The method must be one which takes one argument and returns an object.
  * <br />Raises NSInvalidArgumentException if given a null selector.
  */
-- (id) performSelector: (SEL)aSelector withObject: (id) anObject
+- (id) performSelector: (SEL)aSelector withObject: (id)anObject
 {
   IMP msg;
 
@@ -2034,7 +2038,7 @@ static id gs_weak_load(id obj)
   /* The Apple runtime API would do:
    * msg = class_getMethodImplementation(object_getClass(self), aSelector);
    * but this cannot ask self for information about any method reached by
-   * forwarding, so the returned forwarding function would ge a generic one
+   * forwarding, so the returned forwarding function would be a generic one
    * rather than one aware of hardware issues with returning structures
    * and floating points.  We therefore prefer the GNU API which is able to
    * use forwarding callbacks to get better type information.
@@ -2043,8 +2047,8 @@ static id gs_weak_load(id obj)
   if (!msg)
     {
       [NSException raise: NSGenericException
-		   format: @"invalid selector passed to %s",
-		   sel_getName(_cmd)];
+		   format: @"invalid selector '%s' passed to %s",
+                   sel_getName(aSelector), sel_getName(_cmd)];
       return nil;
     }
 
@@ -2079,7 +2083,8 @@ static id gs_weak_load(id obj)
   if (!msg)
     {
       [NSException raise: NSGenericException
-		  format: @"invalid selector passed to %s", sel_getName(_cmd)];
+		   format: @"invalid selector '%s' passed to %s",
+                   sel_getName(aSelector), sel_getName(_cmd)];
       return nil;
     }
 
@@ -2609,3 +2614,24 @@ static id gs_weak_load(id obj)
 }
 @end
 
+NSUInteger
+GSPrivateMemorySize(NSObject *self, NSHashTable *exclude)
+{
+  if (0 == NSHashGet(exclude, self))
+    {
+      NSHashInsert(exclude, self);
+      return class_getInstanceSize(object_getClass(self));
+    }
+  return 0;
+}
+
+@implementation	NSObject (MemoryFootprint)
++ (NSUInteger) sizeInBytesExcluding: (NSHashTable*)exclude
+{
+  return 0;
+}
+- (NSUInteger) sizeInBytesExcluding: (NSHashTable*)exclude
+{
+  return GSPrivateMemorySize(self, exclude);
+}
+@end

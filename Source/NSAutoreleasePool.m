@@ -23,7 +23,7 @@
    Boston, MA 02111 USA.
 
    <title>NSAutoreleasePool class reference</title>
-   $Date: 2012-11-16 00:34:54 +0800 (五, 16 11 2012) $ $Revision: 35795 $
+   $Date: 2015-03-14 02:31:14 +0800 (六, 14  3 2015) $ $Revision: 38406 $
    */
 
 #import "common.h"
@@ -790,6 +790,7 @@ pop_pool_from_cache (struct autorelease_thread_vars *tv)
   /* Now free the memory (we have finished usingthe pool).
    */
   pool = tv->current_pool;
+  tv->current_pool = nil;
   while (pool)
     {
       NSAutoreleasePool *p = pool->_parent;

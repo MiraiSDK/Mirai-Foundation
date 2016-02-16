@@ -22,7 +22,7 @@
    Boston, MA 02111 USA.
 
    <title>NSCountedSet class reference</title>
-   $Date: 2013-08-22 23:44:54 +0800 (四, 22  8 2013) $ $Revision: 37003 $
+   $Date: 2015-05-02 16:03:05 +0800 (六, 02  5 2015) $ $Revision: 38470 $
    */
 
 #import "common.h"
@@ -89,6 +89,11 @@ static Class NSCountedSet_concrete_class;
     {
       return NSAllocateObject(self, 0, z);
     }
+}
+
+- (NSUInteger) _countForObject: (id)anObject
+{
+  return [self countForObject: anObject];
 }
 
 /**
