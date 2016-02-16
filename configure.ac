@@ -90,40 +90,15 @@ if test -z "$LIBRARY_COMBO"; then
   LIBRARY_COMBO=`gnustep-config --variable=LIBRARY_COMBO 2>&5`
 fi
 
-if test "$OBJC_RUNTIME_LIB" = "ng"; then
+nonfragile=`gnustep-config --objc-flags | grep _NONFRAGILE_ABI 2>&5`
+if test -z "$nonfragile"; then
+  nonfragile=no
+  BASE_NONFRAGILE_ABI=0
+else
   nonfragile=yes
   BASE_NONFRAGILE_ABI=1
-else
-  nonfragile=`gnustep-config --objc-flags | grep _NONFRAGILE_ABI 2>&5`
-  if test -z "$nonfragile"; then
-    nonfragile=no
-    BASE_NONFRAGILE_ABI=0
-  else
-    nonfragile=yes
-    BASE_NONFRAGILE_ABI=1
-  fi
 fi
 AC_SUBST(BASE_NONFRAGILE_ABI)
-
-MAKECPPFLAGS=`gnustep-config --variable=CPPFLAGS`
-if test "$CPPFLAGS" = ""; then
-  CPPFLAGS=$MAKECPPFLAGS
-  export CPPFLAGS
-else
-  if test "$CPPFLAGS" != "$MAKECPPFLAGS"; then
-    AC_MSG_WARN([You are running configure with the preprocessor options ($CPPFLAGS) set to a different value from that used by gnustep-make ($MAKECPPFLAGS).  To avoid conflicts/problems, reconfigure/reinstall gnustep-make to use CPPFLAGS=$CPPFLAGS or run the gnustep-base configure again with your CPPFLAGS environment variable set to $MAKECPPFLAGS])
-  fi
-fi
-
-MAKELDFLAGS=`gnustep-config --variable=LDFLAGS`
-if test "$LDFLAGS" = ""; then
-  LDFLAGS=$MAKELDFLAGS
-  export LDFLAGS
-else
-  if test "$LDFLAGS" != "$MAKELDFLAGS"; then
-    AC_MSG_WARN([You are running configure with the link options ($LDFLAGS) set to a different value from that used by gnustep-make ($MAKELDFLAGS).  To avoid conflicts/problems, reconfigure/reinstall gnustep-make to use LDFLAGS=$LDFLAGS or run the gnustep-base configure again with your LDFLAGS environment variable set to $MAKELDFLAGS])
-  fi
-fi
 
 # We shouldn't be loading GNUstep.sh here.  It would load in a lot of
 # variables which might get confused with the ones that will be used
@@ -1073,52 +1048,75 @@ LDFLAGS="$LDFLAGS -L$GNUSTEP_LOCAL_LIBRARIES -L$GNUSTEP_NETWORK_LIBRARIES -L$GNU
 #--------------------------------------------------------------------
 # Find the compiler
 #--------------------------------------------------------------------
-MAKECC=`gnustep-config --variable=CC`
-MAKECPP=`gnustep-config --variable=CPP`
-MAKECXX=`gnustep-config --variable=CXX`
 if test "$CC" = ""; then
-  CC=$MAKECC
-  export CC
-else
-  if test "$CC" != "$MAKECC"; then
-    AC_MSG_WARN([You are running configure with the compiler ($CC) set to a different value from that used by gnustep-make ($MAKECC).  To avoid conflicts/problems, reconfigure/reinstall gnustep-make to use CC=$CC or run the gnustep-base configure again with your CC environment variable set to $MAKECC])
-  fi
+  CC=`gnustep-config --variable=CC`
 fi
 if test "$CPP" = ""; then
-  CPP=$MAKECPP
-  export CPP
-else
-  if test "$CPP" != "$MAKECPP"; then
-    AC_MSG_WARN([You are running configure with the preprocessor ($CPP) set to a different value from that used by gnustep-make ($MAKECPP).  To avoid conflicts/problems, reconfigure/reinstall gnustep-make to use CPP=$CPP or run the gnustep-base configure again with your CPP environment variable set to $MAKECPP])
-  fi
+  CPP=`gnustep-config --variable=CPP`
 fi
 if test "$CXX" = ""; then
-  CXX=$MAKECXX
-  export CXX
-else
-  if test "$CXX" != "$MAKECXX"; then
-    AC_MSG_WARN([You are running configure with the compiler ($CXX) set to a different value from that used by gnustep-make ($MAKECXX).  To avoid conflicts/problems, reconfigure/reinstall gnustep-make to use CXX=$CXX or run the gnustep-base configure again with your CXX environment variable set to $MAKECXX])
-  fi
+  CXX=`gnustep-config --variable=CXX`
 fi
 AC_PROG_CC
 AC_PROG_CPP
 AC_USE_SYSTEM_EXTENSIONS
 
+MAKECC=`gnustep-config --variable=CC`
+if test "$CC" != "$MAKECC"; then
+  AC_MSG_ERROR([You are running configure with the compiler ($CC) set to a different value from that used by gnustep-make ($MAKECC).  Please run configure again with your environment set to match your gnustep-make])
+  exit 1
+fi
 
-# Large file support needed by NSData/NSFileHandle.
-# These macros must be called after AC_USE_SYSTEM_EXTENSIONS because
-# the `fseeko' declaration may be hidden by default on some systems.
-AC_FUNC_FSEEKO
-AH_BOTTOM([
-/* Define `fseeko' to `fseek' if the former is missing.
-   Likewise for `ftello'.  */
-#if !HAVE_FSEEKO
-# define fseeko fseek
-# define ftello ftell
-#endif
-])
-AC_SYS_LARGEFILE
-AC_TYPE_OFF_T
+#--------------------------------------------------------------------
+# Check wether the compiler supports UTF-8 constant strings
+#--------------------------------------------------------------------
+
+GS_EXEC_CHARSET=
+GS_INPUT_CHARSET=
+AC_ARG_ENABLE(unicodeconstants,
+      [  --disable-unicodeconstants
+	    Ignores the use of a compiler which does not support unicode
+	    string constants.],,)
+if test "$enable_unicodeconstants" != "no"; then
+  AC_LANG_PUSH(C)
+  AC_MSG_CHECKING(whether compiler supports UTF-8 constants in executable)
+  saved_CFLAGS="$CFLAGS"
+  saved_LANG="$LANG"
+  saved_LC_ALL="$LC_ALL"
+  export LANG="en_US.ISO-8859-1"
+  export LC_ALL="en_US.ISO-8859-1"
+  # We are working in a latin1 locale so we can build a program containing
+  # a latin1 pound character, and see if the executable has a utf-8 literal.
+  AC_TRY_RUN([#include "$srcdir/config/config.constant-string-encoding.c"],
+	  utf8literal_ok=yes,
+	  utf8literal_ok=no,
+	  utf8literal_ok="$cross_utf8literal_ok")
+  if test "$utf8literal_ok" = "yes"; then
+    AC_MSG_RESULT([yes]);
+  else
+    # The compiler did not produce a utf-8 literal ... see if it does so when
+    # given the appropriate flags to tell it what charactersets to use.
+    CFLAGS="$CFLAGS -finput-charset=ISO-8859-1 -fexec-charset=UTF-8"
+    AC_TRY_RUN([#include "$srcdir/config/config.constant-string-encoding.c"],
+	  utf8literal_ok=yes,
+	  utf8literal_ok=no,
+	  utf8literal_ok="$cross_utf8literal_ok")
+    if test "$utf8literal_ok" = "yes"; then
+      AC_MSG_RESULT([yes]);
+      GS_EXEC_CHARSET=-fexec-charset=UTF-8
+      GS_INPUT_CHARSET=-finput-charset=UTF-8
+    else
+      AC_MSG_RESULT([no]);
+      AC_MSG_WARN([Your compiler does not appear to support locales or command line options to control handling of charactersets, so we cannot be sure that the compiled code will contain the UTF-8 string literals expected by gnustep-base.  This means that using any source code code containing non US-ASCII text in string literals may give unexpected results (or crashes) at runtime.  However, as long as any such literals only use the UTF-8 characterset, this is unlikely to be a problem (since old/faulty compilers are likely to pass the UTF-8 literals through to the compiled code). Please configure using --disable-unicodeconstants to avoid seeing this warning.])
+    fi
+  fi
+  export LANG="$saved_LANG"
+  export LC_ALL="$saved_LC_ALL"
+  CFLAGS="$saved_CFLAGS"
+  AC_LANG_POP(C)
+fi
+AC_SUBST(GS_EXEC_CHARSET)
+AC_SUBST(GS_INPUT_CHARSET)
 
 #--------------------------------------------------------------------
 # Check how to enable builtins for atomic operations
@@ -1157,7 +1155,7 @@ AC_MSG_CHECKING([whether the compiler supports atomic operations]);
           CFLAGS="$saved_CFLAGS $ATOMIC_CFLAGS"
           ;;
       esac
-      AC_MSG_CHECKING([whether CC supports atomic operations with -march]);
+      AC_MSG_CHECKING([whether gcc supports atomic operations with -march]);
         AC_LINK_IFELSE([AC_LANG_PROGRAM([[typedef int atomic;]],
           [[atomic x; atomic y; __sync_bool_compare_and_swap(&x, y, y+1);]])],
         need_march=yes,
@@ -1172,7 +1170,7 @@ AC_MSG_CHECKING([whether the compiler supports atomic operations]);
         AC_MSG_RESULT([no]);
         saved_LDFLAGS="$LDFLAGS";
         LDFLAGS="$saved_LDFLAGS -lgcc";
-        AC_MSG_CHECKING([whether CC supports atomic operations using libgcc]);
+        AC_MSG_CHECKING([whether gcc supports atomic operations using libgcc]);
           AC_LINK_IFELSE([AC_LANG_PROGRAM([[typedef int atomic;]],
             [[atomic x; atomic y; __sync_bool_compare_and_swap(&x, y, y+1);]])],
           atomic_in_libgcc=yes,
@@ -1223,8 +1221,6 @@ elif test "$OBJC_RUNTIME_LIB" = "gnugc"; then
   AC_MSG_RESULT(GNU)
   OBJCFLAGS="$OBJCFLAGS -fgnu-runtime"
   OBJC_WITH_GC=yes
-elif test "$OBJC_RUNTIME_LIB" = "ng"; then
-  AC_MSG_RESULT(Next Gen)
 else
   AC_MSG_RESULT(GNU)
   OBJCFLAGS="$OBJCFLAGS -fgnu-runtime"
@@ -1316,8 +1312,8 @@ fi
 AC_CHECK_HEADERS(objc/runtime.h)
 AC_CHECK_HEADERS(objc/objc.h)
 if test $ac_cv_header_objc_objc_h = no; then
-  echo "Check to make sure you have the Objective-C runtime library"
-  echo "and its headers installed."
+  echo "Check to make sure you have a full installation of the GCC"
+  echo "compiler that includes the Objective-C headers and libraries"
   AC_MSG_ERROR(Could not find Objective-C headers)
 fi
 
@@ -1371,14 +1367,14 @@ else
   AC_MSG_RESULT([not found])
 fi
 
-AC_MSG_CHECKING(for compiler visibility attribute support)
+AC_MSG_CHECKING(for gcc visibility attribute support)
 saved_CFLAGS="$CFLAGS"
 CFLAGS="$CFLAGS -Werror"
-AC_COMPILE_IFELSE([AC_LANG_SOURCE([
+AC_COMPILE_IFELSE([
   #include <stdio.h>
   int foo() __attribute__ ((visibility("internal")));
   int foo(){ return 1; }
-  int main(){ return foo(); }])],
+  int main(){ return foo(); }],
   AC_MSG_RESULT([found])
   gs_visibility=1,
   AC_MSG_RESULT([not present])
@@ -1687,12 +1683,10 @@ if test "$ac_cv_func_gethostbyname" = "no"; then
   AC_CHECK_LIB(socket, gethostbyname)
 fi
 
-AC_CHECK_FUNCS(getaddrinfo)
-
 #--------------------------------------------------------------------
 # Check for pthread.h 
 #--------------------------------------------------------------------
-AC_CHECK_HEADERS(pthread.h pthread_np.h)
+AC_CHECK_HEADERS(pthread.h)
 if test $ac_cv_header_pthread_h = yes ; then
   AC_CHECK_SIZEOF(pthread_mutex_t,,[AC_INCLUDES_DEFAULT
 #include <pthread.h>])
@@ -1701,15 +1695,6 @@ if test $ac_cv_header_pthread_h = yes ; then
     AC_MSG_ERROR([Unable to find size of pthread_mutex_t (required).])
   fi
   AC_SUBST(GS_SIZEOF_MUTEX_T)
-# pthread_mutex_t.__data.__owner is non-standard since pthread_mutex_t is
-# nominally an opaque type.  We must not rely on this for anything other
-# than debug output!
-  AC_CHECK_MEMBER([pthread_mutex_t.__data.__owner],,,[AC_INCLUDES_DEFAULT
-#include <pthread.h>])
-  if test $ac_cv_member_pthread_mutex_t___data___owner = yes ; then
-    AC_DEFINE(HAVE_PTHREAD_MUTEX_OWNER, 1,
-      [Define if you have pthread_mutex_t.__data.__owner])
-  fi
   AC_CHECK_SIZEOF(pthread_cond_t,,[AC_INCLUDES_DEFAULT
 #include <pthread.h>])
   if test $ac_cv_sizeof_pthread_cond_t = 0 ; then
@@ -1764,8 +1749,6 @@ if test $pthread_ok = no ; then
   AC_MSG_ERROR([Unable to find pthread library (needed for thread support).])
 fi
 
-# Check threading extensions
-AC_CHECK_FUNCS(pthread_getthreadid_np pthread_main_np)
 
 # Typically need librt on Solaris for sched_yield
 AC_CHECK_LIB(rt, sched_yield)
@@ -1779,11 +1762,11 @@ AC_CHECK_FUNCS(nanosleep usleep Sleep)
 AC_MSG_CHECKING(for objc_root_class attribute support)
 saved_CFLAGS="$CFLAGS"
 CFLAGS="$CFLAGS -Werror $OBJCFLAGS -x objective-c"
-AC_COMPILE_IFELSE([AC_LANG_SOURCE([
+AC_COMPILE_IFELSE([
   __attribute__((objc_root_class)) @interface RootObject
   @end
   @implementation RootObject
-  @end])],
+  @end],
   AC_MSG_RESULT([found])
   gs_objc_root_class_attr=1,
   AC_MSG_RESULT([not present])
@@ -1795,55 +1778,6 @@ AC_SUBST(GS_HAVE_OBJC_ROOT_CLASS_ATTR)
 AC_DEFINE_UNQUOTED(HAVE_OBJC_ROOT_CLASS_ATTRIBUTE,$gs_objc_root_class_attr,
   [Says whether the objc_root_class attribute works])
 CFLAGS=$saved_CFLAGS
-
-
-#--------------------------------------------------------------------
-# Check if we can name pthreads
-#--------------------------------------------------------------------
-
-AC_CACHE_CHECK([for pthread_setname_np()], gs_cv_pthread_setname_np,
-[AC_LINK_IFELSE(
-  [AC_LANG_PROGRAM([#include <pthread.h>],
-    [pthread_setname_np("name");])],
-  [gs_cv_pthread_setname_np=darwin],
-  [AC_LINK_IFELSE(
-    [AC_LANG_PROGRAM([#include <pthread.h>],
-      [pthread_setname_np(pthread_self(), "name");])],
-    [gs_cv_pthread_setname_np=glibc],
-    [AC_LINK_IFELSE(
-      [AC_LANG_PROGRAM([#include <pthread.h>],
-        [pthread_setname_np(pthread_self(), "%s", "name");])],
-      [gs_cv_pthread_setname_np=netbsd],
-      [gs_cv_pthread_setname_np=none])])])])
-case $gs_cv_pthread_setname_np in
-  darwin)
-    AC_DEFINE(PTHREAD_SETNAME(a), pthread_setname_np(a),
-      [Description: Define set name function for pthread with one arg])
-    ;;
-  glibc)
-    AC_DEFINE(PTHREAD_SETNAME(a), pthread_setname_np(pthread_self(),a),
-      [Description: Define setname function for pthread with two args])
-    ;;
-  netbsd)
-    AC_DEFINE(PTHREAD_SETNAME(a), pthread_setname_np(pthread_self(),"%s",a),
-      [Description: Define setname function for pthread with three args])
-    ;;
-esac
-
-#--------------------------------------------------------------------
-# Check whether we can get the system thread ID
-#--------------------------------------------------------------------
-AC_CACHE_CHECK([for gettid()], ac_cv_gettid,
-[AC_TRY_RUN(#define _GNU_SOURCE
-#include <unistd.h>
-#include <sys/syscall.h>
-#include <sys/types.h>
-int main(int argc, char **argv) {
-pid_t t = syscall(SYS_gettid); return t == -1 ? 1 : 0; },
-[ac_cv_gettid=yes], [ac_cv_gettid=no], [ac_cv_gettid=no])])
-if test "$ac_cv_gettid" = "yes"; then
-  AC_DEFINE(HAVE_GETTID, 1, [Define if you have gettid()])
-fi
 
 #--------------------------------------------------------------------
 # Check whether Objective-C /really/ works
@@ -1995,13 +1929,12 @@ if test "$nonfragile" = "yes"; then
   saved_CPPFLAGS="$CPPFLAGS"
   CPPFLAGS="$CPPFLAGS $OBJCFLAGS -fobjc-nonfragile-abi -x objective-c"
   AC_MSG_CHECKING(for non-fragile-abi support)
-  AC_RUN_IFELSE([AC_LANG_SOURCE(
-    [[#include "$srcdir/config/config.non-fragile-ivars.m"]])],
+  AC_RUN_IFELSE([#include "$srcdir/config/config.non-fragile-ivars.m"],
     non_fragile=yes, non_fragile=no,
     non_fragile="$cross_non_fragile")
   CPPFLAGS="$saved_CPPFLAGS"
   if test $non_fragile = yes; then
-    OBJCLIBS="$OBJLIBS -fobjc-nonfragile-abi"
+    OBJCFLAGS="$OBJCFLAGS -fobjc-nonfragile-abi"
     GS_NONFRAGILE=1
     AC_ARG_ENABLE(mixedabi,
       [  --disable-mixedabi
@@ -2034,23 +1967,19 @@ AC_EGREP_HEADER(objc_get_uninstalled_dtable, objc/objc-api.h,
 # Native Objective-C exceptions
 #--------------------------------------------------------------------
 
-if test "$OBJC_RUNTIME_LIB" = "ng"; then
+# First of all, determine if native Objective-C exceptions are enabled
+# in gnustep-make.  They are enabled if the compiler supports it; they
+# are disabled if it doesn't.  And, of course, the user may have
+# forced one behaviour or the other.  Note that we go and look at the
+# actual config.make file to be able to know what was configured in
+# gnustep-make regardless of any gnustep-base that is currently
+# installed.  We can't use `gnustep-config --objc-flags` because that
+# may report native exceptions as disabled because the currently
+# installed gnustep-base has them disabled.
+if grep USE_OBJC_EXCEPTIONS $CURRENT_GNUSTEP_MAKEFILES/$lobj_dir/config.make | grep yes >&5 2>&5; then
   exceptions=yes
 else
-  # Determine if native Objective-C exceptions are enabled
-  # in gnustep-make.  They are enabled if the compiler supports it; they
-  # are disabled if it doesn't.  And, of course, the user may have
-  # forced one behaviour or the other.  Note that we go and look at the
-  # actual config.make file to be able to know what was configured in
-  # gnustep-make regardless of any gnustep-base that is currently
-  # installed.  We can't use `gnustep-config --objc-flags` because that
-  # may report native exceptions as disabled because the currently
-  # installed gnustep-base has them disabled.
-  if grep USE_OBJC_EXCEPTIONS $CURRENT_GNUSTEP_MAKEFILES/$lobj_dir/config.make | grep yes >&5 2>&5; then
-    exceptions=yes
-  else
-    exceptions=no
-  fi
+  exceptions=no
 fi
 
 # At this point, if exceptions=no, then native exceptions are disabled
@@ -2068,8 +1997,7 @@ fi
 # the other hand, that case is going to become more and more unusual.
 
 AC_MSG_CHECKING(for objc_setUncaughtExceptionHandler() in runtime)
-AC_LINK_IFELSE([AC_LANG_SOURCE(
-  [[#include "$srcdir/config/config.setUncaughtExceptionHandler.m"]])],
+AC_LINK_IFELSE([#include "$srcdir/config/config.setUncaughtExceptionHandler.m"],
 	have_set_uncaught_exception_handler=yes, have_set_uncaught_exception_handler=no)
 if test $have_set_uncaught_exception_handler = yes; then
   AC_DEFINE(HAVE_SET_UNCAUGHT_EXCEPTION_HANDLER,1,
@@ -2080,8 +2008,7 @@ AC_MSG_RESULT($have_set_uncaught_exception_handler)
 # Don't revert any Objective-C flags as they are used in the next test
 
 AC_MSG_CHECKING(for objc_set_unexpected() in runtime)
-AC_LINK_IFELSE(
-  [AC_LANG_SOURCE([[#include "$srcdir/config/config.set_unexpected.m"]])],
+AC_LINK_IFELSE([#include "$srcdir/config/config.set_unexpected.m"],
 	have_set_unexpected=yes, have_set_unexpected=no)
 if test $have_set_unexpected = yes; then
   AC_DEFINE(HAVE_SET_UNEXPECTED,1,
@@ -2092,11 +2019,8 @@ AC_MSG_RESULT($have_set_unexpected)
 # Don't revert any Objective-C flags as they are used in the next test
 
 AC_MSG_CHECKING(for _objc_unexpected_exception in runtime)
-AC_RUN_IFELSE(
-  [AC_LANG_SOURCE([[#include "$srcdir/config/config.unexpected.m"]])],
-    have_unexpected=yes,
-    have_unexpected=no,
-    have_unexpected="$cross_have_unexpected")
+AC_RUN_IFELSE([#include "$srcdir/config/config.unexpected.m"],
+	have_unexpected=yes, have_unexpected=no, have_unexpected="$cross_have_unexpected")
 if test $have_unexpected = yes; then
   AC_DEFINE(HAVE_UNEXPECTED,1,
 	    [Define if libobjc has the _objc_unexpected_exception callback])
@@ -2145,8 +2069,7 @@ AC_SUBST(HAVE_OBJC_SYNC_ENTER)
 # Don't revert any Objective-C flags as they are used in the next test
 
 AC_MSG_CHECKING(for thread-safe +initialize in runtime)
-AC_RUN_IFELSE(
-  [AC_LANG_SOURCE([[#include "$srcdir/config/config.initialize.m"]])],
+AC_RUN_IFELSE([#include "$srcdir/config/config.initialize.m"],
 	safe_initialize=yes, safe_initialize=no, safe_initialize="$cross_safe_initialize")
 if test $safe_initialize = yes; then
   AC_DEFINE(HAVE_INITIALIZE,1,
@@ -2380,7 +2303,7 @@ AC_CHECK_HEADERS(sys/mman.h)
 #--------------------------------------------------------------------
 # These functions needed by NSTask.m
 #--------------------------------------------------------------------
-AC_CHECK_FUNCS(killpg setpgrp setpgid setsid grantpt)
+AC_CHECK_FUNCS(killpg setpgrp setpgid setsid)
 if test "x$ac_cv_func_setpgrp" = xyes; then
   AC_FUNC_SETPGRP
 fi
@@ -2471,7 +2394,6 @@ AC_SUBST(DEFINE_UINTPTR_T)
 #--------------------------------------------------------------------
 AC_SEARCH_LIBS([inet_ntop],[nsl])
 AC_CHECK_FUNCS(gethostbyaddr_r inet_aton inet_pton inet_ntop sigaction)
-
 USE_ZLIB=0
 AC_CHECK_HEADERS(zlib.h)
 if test $ac_cv_header_zlib_h = yes; then
@@ -2521,14 +2443,11 @@ AC_CHECK_HEADERS(wchar.h)
 #--------------------------------------------------------------------
 # Check if short and int values need to be word aligned
 #--------------------------------------------------------------------
-saved_CFLAGS="$CFLAGS"
-CFLAGS="$CFLAGS -O0"
 AC_MSG_CHECKING(short/int needs to be word aligned)
 AC_TRY_RUN([#include "$srcdir/config/config.align.c"],
 	NEED_WORD_ALIGNMENT=0,
 	NEED_WORD_ALIGNMENT=1,
 	NEED_WORD_ALIGNMENT="$cross_NEED_WORD_ALIGNMENT")
-CFLAGS="$saved_CFLAGS"
 AC_DEFINE_UNQUOTED(NEED_WORD_ALIGNMENT, $NEED_WORD_ALIGNMENT,
                    [Define if your system needs to have short/int word aligned])
 if test $NEED_WORD_ALIGNMENT = 1; then
@@ -2835,15 +2754,13 @@ have_forward_hook=yes
 saved_CPPFLAGS="$CPPFLAGS"
 CPPFLAGS="$CPPFLAGS $OBJCFLAGS -x objective-c"
 AC_MSG_CHECKING(for forwarding callback in runtime)
-AC_COMPILE_IFELSE(
-  [AC_LANG_SOURCE([[#include "$srcdir/config/config.forward2.m"]])],
+AC_COMPILE_IFELSE([#include "$srcdir/config/config.forward2.m"],
 	have_forward_hook=yes, have_forward_hook=no)
 if test $have_forward_hook = yes; then
   AC_DEFINE(HAVE_FORWARD2,1,
             [Define if libobjc has the __objc_msg_forward2 function])
 else
-  AC_COMPILE_IFELSE(
-    [AC_LANG_SOURCE([[#include "$srcdir/config/config.forward.m"]])],
+  AC_COMPILE_IFELSE([#include "$srcdir/config/config.forward.m"],
 	have_forward_hook=yes, have_forward_hook=no)
 fi
 AC_MSG_RESULT($have_forward_hook)
@@ -2892,8 +2809,7 @@ fi
 
 if test $enable_ffcall = yes -a $ffi_ok = yes; then
   AC_MSG_CHECKING(if ffcall trampolines work)
-  AC_RUN_IFELSE(
-    [AC_LANG_SOURCE([[#include "$srcdir/config/config.trampoline.c"]])],
+  AC_RUN_IFELSE([#include "$srcdir/config/config.trampoline.c"],
 	  have_working_trampoline=yes, have_working_trampoline=no, 
 	  have_working_trampoline=yes)
   AC_MSG_RESULT($have_working_trampoline)
@@ -2959,9 +2875,9 @@ AC_ARG_ENABLE(iconv,
 
 if test $enable_iconv = yes; then
 AC_MSG_CHECKING(iconv support)
-AC_RUN_IFELSE([AC_LANG_SOURCE([#include <iconv.h>
+AC_RUN_IFELSE([[#include <iconv.h>
 int main(int argc,char **argv)
-{ return iconv_open("UTF-8//TRANSLIT","ASCII") == -1 ? 1 : 0; }])]
+{ return iconv_open("UTF-8//TRANSLIT","ASCII") == -1 ? 1 : 0; }]]
 ,
   # libc has a working iconv.
   AC_DEFINE(HAVE_ICONV,1, [Define if you have this function])
@@ -2986,9 +2902,9 @@ if test $found_iconv = no ; then
 
   old_LIBS="$LIBS"
   LIBS="-liconv $LIBS"
-  AC_RUN_IFELSE([AC_LANG_SOURCE([#include <iconv.h>
+  AC_RUN_IFELSE([[#include <iconv.h>
   int main(int argc,char **argv)
-  { return iconv_open("UTF-8//TRANSLIT","ASCII") == -1 ? 1 : 0; }])]
+  { return iconv_open("UTF-8//TRANSLIT","ASCII") == -1 ? 1 : 0; }]]
   ,
     # -liconv works.
     AC_DEFINE(HAVE_ICONV,1, [Define if you have this function])
@@ -3010,9 +2926,9 @@ if test $found_iconv = no ; then
   # BSDs install this lib as libgiconv.
   old_LIBS="$LIBS"
   LIBS="-lgiconv $LIBS"
-  AC_RUN_IFELSE([AC_LANG_SOURCE([#include <giconv.h>
+  AC_RUN_IFELSE([[#include <giconv.h>
   int main(int argc,char **argv)
-  { return iconv_open("UTF-8//TRANSLIT","ASCII") == -1 ? 1 : 0; }])]
+  { return iconv_open("UTF-8//TRANSLIT","ASCII") == -1 ? 1 : 0; }]]
   ,
     AC_DEFINE(HAVE_ICONV,1, [Define if you have this function])
     AC_DEFINE(HAVE_GICONV,1, [Define if you have this function])
@@ -3034,9 +2950,9 @@ AC_ARG_ENABLE(stricticonv,
   enable_stricticonv=no)
 if test $enable_stricticonv = yes; then
 AC_MSG_CHECKING(non-lossy iconv support)
-AC_RUN_IFELSE([AC_LANG_SOURCE([#include <iconv.h>
+AC_RUN_IFELSE([[#include <iconv.h>
 int main(int argc,char **argv)
-{ return iconv_open("UTF-8","ASCII") == -1 ? 1 : 0; }])]
+{ return iconv_open("UTF-8","ASCII") == -1 ? 1 : 0; }]]
 ,
   # libc has a working iconv.
   AC_DEFINE(HAVE_ICONV,1, [Define if you have this function])
@@ -3059,9 +2975,9 @@ if test $found_iconv = no ; then
 
   old_LIBS="$LIBS"
   LIBS="-liconv $LIBS"
-  AC_RUN_IFELSE([AC_LANG_SOURCE([#include <iconv.h>
+  AC_RUN_IFELSE([[#include <iconv.h>
   int main(int argc,char **argv)
-  { return iconv_open("UTF-8","ASCII") == -1 ? 1 : 0; }])]
+  { return iconv_open("UTF-8","ASCII") == -1 ? 1 : 0; }]]
   ,
     # -liconv works.
     AC_DEFINE(HAVE_ICONV,1, [Define if you have this function])
@@ -3078,9 +2994,9 @@ if test $found_iconv = no ; then
   # BSDs install this lib as libgiconv.
   old_LIBS="$LIBS"
   LIBS="-lgiconv $LIBS"
-  AC_RUN_IFELSE([AC_LANG_SOURCE([#include <giconv.h>
+  AC_RUN_IFELSE([[#include <giconv.h>
   int main(int argc,char **argv)
-  { return iconv_open("UTF-8","ASCII") == -1 ? 1 : 0; }])]
+  { return iconv_open("UTF-8","ASCII") == -1 ? 1 : 0; }]]
   ,
     AC_DEFINE(HAVE_ICONV,1, [Define if you have this function])
     AC_DEFINE(HAVE_GICONV,1, [Define if you have this function])
@@ -3211,13 +3127,12 @@ if test $enable_tls = yes; then
     fi
   fi
   if test $HAVE_GNUTLS = 1; then
-    if ! pkg-config --atleast-version=2.12 gnutls; then
-      AC_CHECK_LIB(gcrypt, gcry_control, have_gcrypt=yes, have_gcrypt=no)
-      if test "$have_gcrypt" = "no"; then
-        HAVE_GNUTLS=0
-      else
-        TLS_LIBS="$TLS_LIBS -lgcrypt"
-      fi
+    AC_CHECK_LIB(gcrypt, gcry_control, have_gcrypt=yes, have_gcrypt=no)
+    if test "$have_gcrypt" = "no"; then
+      AC_MSG_WARN([Missing support for thread-safe operation in GNUTLS.  Disabling TLS support).])
+      HAVE_GNUTLS=0
+    else
+      TLS_LIBS="$TLS_LIBS -lgcrypt"
     fi
   fi
   if test $HAVE_GNUTLS = 0; then

@@ -110,6 +110,7 @@
   _done = YES;
 }
 
+
 - (void) connection: (NSURLConnection *)connection
      didReceiveData: (NSData *)data
 {
@@ -351,7 +352,6 @@ typedef struct
             {
               [loop runMode: NSDefaultRunLoopMode beforeDate: limit];
             }
-          [limit release];
           if (NO == [collector done])
             {
               data = nil;

@@ -1,7 +1,7 @@
 /**
    NSFileManager.m
 
-   Copyright (C) 1997-2015 Free Software Foundation, Inc.
+   Copyright (C) 1997-2002 Free Software Foundation, Inc.
 
    Author: Mircea Oancea <mircea@jupiter.elcom.pub.ro>
    Author: Ovidiu Predescu <ovidiu@net-community.com>
@@ -34,9 +34,10 @@
    Boston, MA 02111 USA.
 
    <title>NSFileManager class reference</title>
-   $Date: 2016-02-15 18:10:39 +0800 (一, 15  2 2016) $ $Revision: 39373 $
+   $Date: 2014-01-13 20:08:04 +0800 (一, 13  1 2014) $ $Revision: 37590 $
 */
 
+#define _FILE_OFFSET_BITS 64
 /* The following define is needed for Solaris get(pw/gr)(nam/uid)_r declartions
    which default to pre POSIX declaration.  */
 #define _POSIX_PTHREAD_SEMANTICS
@@ -693,69 +694,6 @@ static NSStringEncoding	defaultEncoding;
     }
 }
 
-- (NSArray*) contentsOfDirectoryAtURL:(NSURL*)url
-           includingPropertiesForKeys:(NSArray*)keys
-                              options:(NSDirectoryEnumerationOptions)mask
-                                error:(NSError **)error
-{
-  NSArray                *result;
-  NSDirectoryEnumerator *direnum;
-  NSString      *path;
-  
-  DESTROY(_lastError);
-
-  if (![[url scheme] isEqualToString:@"file"])
-    return nil;
-  path = [url path];
-  
-  direnum = [[NSDirectoryEnumerator alloc]
-		       initWithDirectoryPath: path
-                   recurseIntoSubdirectories: NO
-                              followSymlinks: NO
-                                justContents: NO
-                                         for: self];
-
-  /* we make an array of NSURLs */
-  result = nil;
-  if (nil != direnum)
-    {
-      IMP	nxtImp;
-      NSMutableArray *urlArray;
-      NSString *tempPath;
-
-
-      nxtImp = [direnum methodForSelector: @selector(nextObject)];
-
-      urlArray = [NSMutableArray arrayWithCapacity:128];
-      while ((tempPath = (*nxtImp)(direnum, @selector(nextObject))) != nil)
-	{
-          NSURL *tempURL;
-          NSString *lastComponent;
-      
-          tempURL = [NSURL fileURLWithPath:tempPath];
-          lastComponent = [tempPath lastPathComponent];
-          
-          /* we purge files beginning with . */
-          if (!((mask & NSDirectoryEnumerationSkipsHiddenFiles) && [lastComponent hasPrefix:@"."]))
-            [urlArray addObject:tempURL];
-	}
-      RELEASE(direnum);
- 
-      if ([urlArray count] > 0)
-        result = [NSArray arrayWithArray:urlArray];
-    }
-
-  if (error != NULL)
-    {
-      if (nil == result)
-	{
-	  *error = [self _errorFrom: path to: nil];
-	}
-    }
-
-  return result;  
-}
-
 - (NSArray*) contentsOfDirectoryAtPath: (NSString*)path error: (NSError**)error
 {
   NSArray       *result;
@@ -816,11 +754,6 @@ static NSStringEncoding	defaultEncoding;
 	      result = [self createDirectoryAtPath: dir
 		     			attributes: attributes];
 	    }
-          // an existing not created dir is equivalent to a created one
-          else
-            {
-              result = YES;
-            }
 	}
     }
   else
@@ -1030,7 +963,7 @@ static NSStringEncoding	defaultEncoding;
 	    NSFileOwnerAccountName, NSUserName(), nil];
 	  if (![self changeFileAttributes: attributes atPath: path])
 	    {
-	      NSDebugLog(@"Failed to change ownership of '%@' to '%@'",
+	      NSLog(@"Failed to change ownership of '%@' to '%@'",
 		path, NSUserName());
 	    }
 	}
@@ -2117,7 +2050,7 @@ static NSStringEncoding	defaultEncoding;
 
   return [NSDictionary dictionaryWithObjects: values forKeys: keys count: 5];
 #else
-  GSOnceMLog(@"NSFileManager", @"no support for filesystem attributes");
+  NSLog(@"NSFileManager", @"no support for filesystem attributes");
   ASSIGN(_lastError, @"no support for filesystem attributes");
   return nil;
 #endif
@@ -2407,7 +2340,7 @@ static inline void gsedRelease(GSEnumeratedDirectory X)
         }
       else
         {
-          NSDebugLog(@"Failed to recurse into directory '%@' - %@", path,
+          NSLog(@"Failed to recurse into directory '%@' - %@", path,
             [NSError _last]);
         }
     }
@@ -2558,7 +2491,7 @@ static inline void gsedRelease(GSEnumeratedDirectory X)
 		}
 	      if (S_IFDIR == (S_IFMT & statbuf.st_mode))
 		{
-		  _DIR  *dir_pointer;
+		  _DIR*  dir_pointer;
 
 		  dir_pointer
 		    = _OPENDIR([_mgr fileSystemRepresentationWithPath:
@@ -2574,7 +2507,7 @@ static inline void gsedRelease(GSEnumeratedDirectory X)
 		    }
 		  else
 		    {
-		      NSDebugLog(@"Failed to recurse into directory '%@' - %@",
+		      NSLog(@"Failed to recurse into directory '%@' - %@",
 			_currentFilePath, [NSError _last]);
 		    }
 		}
@@ -2962,7 +2895,7 @@ static inline void gsedRelease(GSEnumeratedDirectory X)
 	  s = [NSString stringWithFormat: @"cannot copy file type '%@'",
 	    fileType];
 	  ASSIGN(_lastError, s);
-	  NSDebugLog(@"%@: %@", sourceFile, s);
+	  NSLog(@"%@: %@", sourceFile, s);
 	  continue;
 	}
       [self changeFileAttributes: attributes atPath: destinationFile];
@@ -3657,7 +3590,7 @@ static NSSet	*fileKeys = nil;
     }
   if (count >= 2)
     {
-      NSDebugLog(@"Warning ... key '%@' not handled", key);
+      NSLog(@"Warning ... key '%@' not handled", key);
     }
   return nil;
 }

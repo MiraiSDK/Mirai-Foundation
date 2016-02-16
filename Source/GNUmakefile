@@ -132,7 +132,6 @@ NSCalendarDate+GNUstepBase.h \
 NSData+GNUstepBase.h \
 NSDebug+GNUstepBase.h \
 NSFileHandle+GNUstepBase.h \
-NSHashTable+GNUstepBase.h \
 NSLock+GNUstepBase.h \
 NSMutableString+GNUstepBase.h \
 NSNetServices+GNUstepBase.h \

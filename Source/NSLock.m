@@ -56,44 +56,6 @@
   [_name release];\
   [super dealloc];\
 }
-
-#if     defined(HAVE_PTHREAD_MUTEX_OWNER)
-
-#define	MDESCRIPTION \
-- (NSString*) description\
-{\
-  if (_mutex.__data.__owner)\
-    {\
-      if (_name == nil)\
-        {\
-          return [NSString stringWithFormat: @"%@ (locked by %llu)",\
-            [super description], (unsigned long long)_mutex.__data.__owner];\
-        }\
-      return [NSString stringWithFormat: @"%@ '%@' (locked by %llu)",\
-        [super description], _name, (unsigned long long)_mutex.__data.__owner];\
-    }\
-  else\
-    {\
-      if (_name == nil)\
-        {\
-          return [super description];\
-        }\
-      return [NSString stringWithFormat: @"%@ '%@'",\
-        [super description], _name];\
-    }\
-}
-
-#define	MISLOCKED \
-- (BOOL) isLockedByCurrentThread\
-{\
-  if (GSPrivateThreadID() == (NSUInteger)_mutex.__data.__owner)\
-    return YES;\
-  else\
-    return NO; \
-}
-
-#else
-
 #define	MDESCRIPTION \
 - (NSString*) description\
 {\
@@ -104,22 +66,11 @@
   return [NSString stringWithFormat: @"%@ '%@'",\
     [super description], _name];\
 }
-
-#define	MISLOCKED \
-- (BOOL) isLockedByCurrentThread\
-{\
-  [NSException raise: NSGenericException format: @"Not supported"];\
-  return NO;\
-}
-
-#endif
-
 #define MFINALIZE \
 - (void) finalize\
 {\
   pthread_mutex_destroy(&_mutex);\
 }
-
 #define MNAME \
 - (void) setName: (NSString*)newName\
 {\
@@ -129,7 +80,6 @@
 {\
   return _name;\
 }
-
 #define	MLOCK \
 - (void) lock\
 {\
@@ -144,7 +94,6 @@
       _NSLockError(self, _cmd, YES);\
     }\
 }
-
 #define	MLOCKBEFOREDATE \
 - (BOOL) lockBeforeDate: (NSDate*)limit\
 {\
@@ -159,14 +108,12 @@
     } while ([limit timeIntervalSinceNow] > 0);\
   return NO;\
 }
-
 #define	MTRYLOCK \
 - (BOOL) tryLock\
 {\
   int err = pthread_mutex_trylock(&_mutex);\
   return (0 == err) ? YES : NO;\
 }
-
 #define	MUNLOCK \
 - (void) unlock\
 {\
@@ -255,7 +202,6 @@ MFINALIZE
   return self;
 }
 
-MISLOCKED
 MLOCK
 
 - (BOOL) lockBeforeDate: (NSDate*)limit
@@ -304,7 +250,6 @@ MFINALIZE
   return self;
 }
 
-MISLOCKED
 MLOCK
 MLOCKBEFOREDATE
 MNAME
@@ -350,7 +295,6 @@ MDESCRIPTION
   return self;
 }
 
-MISLOCKED
 MLOCK
 MLOCKBEFOREDATE
 MNAME
@@ -435,11 +379,6 @@ MUNLOCK
 	}
     }
   return self;
-}
-
-- (BOOL) isLockedByCurrentThread
-{
-  return [_condition isLockedByCurrentThread];
 }
 
 - (void) lock

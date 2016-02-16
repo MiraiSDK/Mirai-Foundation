@@ -22,7 +22,7 @@
    Boston, MA 02111 USA.
 
    <title>NSDateFormatter class reference</title>
-   $Date: 2015-05-26 20:10:20 +0800 (二, 26  5 2015) $ $Revision: 38555 $
+   $Date: 2014-02-19 05:14:11 +0800 (三, 19  2 2014) $ $Revision: 37695 $
    */
 
 #define	GS_NSDateFormatter_IVARS \
@@ -115,8 +115,7 @@ static NSDateFormatterBehavior _defaultBehavior = 0;
   [self _resetUDateFormat];
   
 /* According to Apple docs, default behavior is NSDateFormatterBehavior10_4 on
- * 10.5 and later. Yeah, go figure.
- */
+   10.5 and later. Yeah, go figure. */
 #if GS_USE_ICU == 1
   {
     int length;
@@ -352,7 +351,7 @@ static NSDateFormatterBehavior _defaultBehavior = 0;
   int32_t pPos = 0;
   
   textLength = [string length];
-  text = malloc(sizeof(UChar) * textLength);
+  text = NSZoneMalloc ([self zone], sizeof(UChar) * textLength);
   if (text == NULL)
     return nil;
   
@@ -363,7 +362,7 @@ static NSDateFormatterBehavior _defaultBehavior = 0;
     result =
       [NSDate dateWithTimeIntervalSince1970: (NSTimeInterval)(date / 1000.0)];
   
-  free(text);
+  NSZoneFree ([self zone], text);
   return result;
 #else
   return nil;
@@ -376,16 +375,17 @@ static NSDateFormatterBehavior _defaultBehavior = 0;
   NSString *result;
   int32_t length;
   unichar *string;
+  NSZone *z = [self zone];
   UDate udate = [date timeIntervalSince1970] * 1000.0;
   UErrorCode err = U_ZERO_ERROR;
   
   length = udat_format (internal->_formatter, udate, NULL, 0, NULL, &err);
-  string = malloc(sizeof(UChar) * (length + 1));
+  string = NSZoneMalloc (z, sizeof(UChar) * (length + 1));
   err = U_ZERO_ERROR;
   udat_format (internal->_formatter, udate, string, length, NULL, &err);
   if (U_SUCCESS(err))
     {
-      result = AUTORELEASE([[NSString allocWithZone: NSDefaultMallocZone()]
+      result = AUTORELEASE([[NSString allocWithZone: z]
         initWithBytesNoCopy: string
         length: length * sizeof(UChar)
         encoding: NSUnicodeStringEncoding
@@ -393,7 +393,7 @@ static NSDateFormatterBehavior _defaultBehavior = 0;
       return result;
     }
   
-  free(string);
+  NSZoneFree (z, string);
   return nil;
 #else
   return nil;
@@ -415,12 +415,12 @@ static NSDateFormatterBehavior _defaultBehavior = 0;
   int32_t patternLength;
   
   patternLength = [string length];
-  pattern = malloc(sizeof(UChar) * patternLength);
+  pattern = NSZoneMalloc ([self zone], sizeof(UChar) * patternLength);
   [string getCharacters: pattern range: NSMakeRange(0, patternLength)];
   
   udat_applyPattern (internal->_formatter, 0, pattern, patternLength);
   
-  free(pattern);
+  NSZoneFree ([self zone], pattern);
 #endif
   ASSIGNCOPY(_dateFormat, string);
 }
@@ -965,9 +965,7 @@ static NSDateFormatterBehavior _defaultBehavior = 0;
 - (void) _resetUDateFormat
 {
 #if GS_USE_ICU == 1
-  UChar *pat;
   UChar *tzID;
-  int32_t patLength;
   int32_t tzIDLength;
   UErrorCode err = U_ZERO_ERROR;
   
@@ -975,32 +973,21 @@ static NSDateFormatterBehavior _defaultBehavior = 0;
     udat_close (internal->_formatter);
   
   tzIDLength = [[internal->_tz name] length];
-  tzID = malloc(sizeof(UChar) * tzIDLength);
-  [[internal->_tz name] getCharacters: tzID];
+  tzID = NSZoneMalloc ([self zone], sizeof(UChar) * tzIDLength);
+  [[internal->_tz name] getCharacters: tzID range: NSMakeRange (0, tzIDLength)];
   
-  if (nil == self->_dateFormat)
-    {
-      patLength = 0;
-      pat = 0;
-    }
-  else
-    {
-      patLength = [self->_dateFormat length];
-      pat = malloc(sizeof(UChar) * patLength);
-      [self->_dateFormat getCharacters: pat];
-    }
   internal->_formatter = udat_open (NSToUDateFormatStyle(internal->_timeStyle),
                           NSToUDateFormatStyle(internal->_dateStyle),
                           [[internal->_locale localeIdentifier] UTF8String],
                           tzID,
                           tzIDLength,
-                          pat,
-                          patLength,
+                          NULL,
+                          0,
                           &err);
   if (U_FAILURE(err))
     internal->_formatter = NULL;
-  if (0 != pat) free(pat);
-  free(tzID);
+  
+  NSZoneFree ([self zone], tzID);
 #else
   return;
 #endif
@@ -1023,10 +1010,12 @@ static NSDateFormatterBehavior _defaultBehavior = 0;
       NSString *string = [array objectAtIndex: idx];
       
       length = [string length];
-      value = malloc(sizeof(unichar) * length);
+      value = NSZoneMalloc ([self zone], sizeof(unichar) * length);
       [string getCharacters: value range: NSMakeRange(0, length)];
+      
       udat_setSymbols (internal->_formatter, symbol, idx, value, length, &err);
-      free(value);
+      
+      NSZoneFree ([self zone], value);
       
       ++idx;
     }
@@ -1058,13 +1047,12 @@ static NSDateFormatterBehavior _defaultBehavior = 0;
       udat_getSymbols (internal->_formatter, symbol, idx, value, length, &err);
       if (U_SUCCESS(err))
         {
-          str = [[NSString allocWithZone: z]
+          str = AUTORELEASE([[NSString allocWithZone: z]
             initWithBytesNoCopy: value
             length: length * sizeof(unichar)
             encoding: NSUnicodeStringEncoding
-            freeWhenDone: YES];
+            freeWhenDone: YES]);
           [mArray addObject: str];
-          RELEASE(str);
         }
       else
         {

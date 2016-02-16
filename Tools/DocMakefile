@@ -65,7 +65,6 @@ BaseTools_AGSDOC_FLAGS = \
 	-DocumentationDirectory ../Documentation/BaseTools \
 	-HeaderDirectory ../Tools \
 	-Standards YES \
-	-DTDs ../Tools \
 	-WordMap '{\
 	WINAPI="";\
 	}' -Up BaseTools

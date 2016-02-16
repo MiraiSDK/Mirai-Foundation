@@ -199,14 +199,20 @@ typedef	uint32_t	OSType;
 #define OSTYPE_DECLARED
 #endif
 
-enum _NSDirectoryEnumerationOptions
-  {
-    NSDirectoryEnumerationSkipsSubdirectoryDescendants = 1L << 0,
-    NSDirectoryEnumerationSkipsPackageDescendants = 1L << 1,
-    NSDirectoryEnumerationSkipsHiddenFiles = 1L << 2
-  };
-typedef NSUInteger NSDirectoryEnumerationOptions; 
-  
+typedef NS_OPTIONS(NSUInteger, NSDirectoryEnumerationOptions) {
+    /* NSDirectoryEnumerationSkipsSubdirectoryDescendants causes the NSDirectoryEnumerator to perform a shallow enumeration and not descend into directories it encounters.
+     */
+    NSDirectoryEnumerationSkipsSubdirectoryDescendants = 1UL << 0,
+    
+    /* NSDirectoryEnumerationSkipsPackageDescendants will cause the NSDirectoryEnumerator to not descend into packages.
+     */
+    NSDirectoryEnumerationSkipsPackageDescendants      = 1UL << 1,
+    
+    /* NSDirectoryEnumerationSkipsHiddenFiles causes the NSDirectoryEnumerator to not enumerate hidden files.
+     */
+    NSDirectoryEnumerationSkipsHiddenFiles             = 1UL << 2
+};
+
 @interface NSFileManager : NSObject
 {
 #if	GS_EXPOSE(NSFileManager)
@@ -308,23 +314,9 @@ typedef NSUInteger NSDirectoryEnumerationOptions;
 - (BOOL) contentsEqualAtPath: (NSString*)path1
 		     andPath: (NSString*)path2;
 
-#if OS_API_VERSION(MAC_OS_X_VERSION_10_6, GS_API_LATEST)
-/**
- * Returns an array of NSURL of the contents of the specified directory. <br>
- * The listing is shallow and does not recurse into subdirectories.
- * The special files '.' and '..' are excluded but it can return hidden files. <br>
- * The only <i>mask</i> option supported is  NSDirectoryEnumerationSkipsHiddenFiles.<br>
- * The current implementation handles only files and property keys are ignored.
- */
-- (NSArray*) contentsOfDirectoryAtURL:(NSURL*)url
-           includingPropertiesForKeys:(NSArray*)keys
-                              options:(NSDirectoryEnumerationOptions)mask
-                                error:(NSError **)error;
-#endif
-  
 #if OS_API_VERSION(MAC_OS_X_VERSION_10_5, GS_API_LATEST)
 /**
- * Returns an array of NSStrings of the contents of the specified directory.<br />
+ * Returns an array of the contents of the specified directory.<br />
  * The listing does <strong>not</strong> recursively list subdirectories.<br />
  * The special files '.' and '..' are not listed.<br />
  * Indicates an error by returning nil (eg. if path is not a directory or

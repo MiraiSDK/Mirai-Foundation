@@ -7,14 +7,13 @@
   notice and this notice are preserved.
 
 */
-#include <stdlib.h>
 
 int main ()
 {
   char  *buf = malloc(30);
   void  *v;
-  short *sp;
-  short *sq;
+  int   *sp;
+  int   *sq;
   int   *ip;
   int   *iq;
   int   i;

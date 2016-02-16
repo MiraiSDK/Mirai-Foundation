@@ -48,7 +48,7 @@ static GC_descr	nodeDesc;	// Type descriptor for map node.
 #include "GNUstepBase/GSIMap.h"
 
 static SEL	memberSel;
-static SEL      privateCountOfSel;
+
 @interface GSSet : NSSet
 {
 @public
@@ -128,7 +128,6 @@ static Class	mutableSetClass;
       setClass = [GSSet class];
       mutableSetClass = [GSMutableSet class];
       memberSel = @selector(member:);
-      privateCountOfSel = @selector(_countForObject:);
     }
 }
 
@@ -425,10 +424,8 @@ static Class	mutableSetClass;
 	      GSIMapEnumerator_t	enumerator;
 	      GSIMapNode 		node;
 	      IMP			imp;
-              IMP                       countImp;
 
 	      imp = [other methodForSelector: memberSel];
-              countImp = [other methodForSelector: privateCountOfSel];
 	      enumerator = GSIMapEnumeratorForMap(&map);
 	      node = GSIMapEnumeratorNextNode(&enumerator);
 
@@ -439,16 +436,6 @@ static Class	mutableSetClass;
 		      GSIMapEndEnumerator(&enumerator);
 		      return NO;
 		    }
-                  else
-                    {
-                      NSUInteger c = (NSUInteger)
-                       countImp(other,privateCountOfSel,node->key.obj);
-                      // GSSet does not have duplicate entries
-                      if (c != 1)
-                        {
-                          return NO;
-                        }
-                    }
 		  node = GSIMapEnumeratorNextNode(&enumerator);
 		}
 	      GSIMapEndEnumerator(&enumerator);
@@ -537,27 +524,6 @@ static Class	mutableSetClass;
   return GSIMapCountByEnumeratingWithStateObjectsCount
     (&map, state, stackbuf, len);
 }
-
-- (NSUInteger) sizeInBytesExcluding: (NSHashTable*)exclude
-{
-  NSUInteger	size = GSPrivateMemorySize(self, exclude);
-
-  if (size > 0)
-    {
-      GSIMapEnumerator_t	enumerator = GSIMapEnumeratorForMap(&map);
-      GSIMapNode 		node = GSIMapEnumeratorNextNode(&enumerator);
-
-      size += GSIMapSize(&map) - sizeof(map);
-      while (node != 0)
-        {
-          size += [node->key.obj sizeInBytesExcluding: exclude];
-          node = GSIMapEnumeratorNextNode(&enumerator);
-        }
-      GSIMapEndEnumerator(&enumerator);
-    }
-  return size;
-}
-
 @end
 
 @implementation GSMutableSet

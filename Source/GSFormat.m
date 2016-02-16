@@ -1749,8 +1749,7 @@ NSDictionary *locale)
 	      }
 	    else
 	      {
-                static unichar  empty = 0;
-		string = &empty;
+		string = (unichar *) {'\0'};
 		len = 0;
 	      }
 	  }

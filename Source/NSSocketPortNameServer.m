@@ -21,7 +21,7 @@
    Software Foundation, Inc., 51 Franklin Street, Fifth Floor,
    Boston, MA 02111 USA.
 
-   $Date: 2016-01-07 19:50:31 +0800 (四, 07  1 2016) $ $Revision: 39258 $
+   $Date: 2013-08-22 23:44:54 +0800 (四, 22  8 2013) $ $Revision: 37003 $
    */
 
 /* define to get system-v functions including inet_aton()
@@ -183,17 +183,15 @@ typedef enum {
   if (e != nil)
     {
       NSDebugMLLog(@"NSSocketPortNameServer",
-	@"failed connect to gdomap on %@:%@ - %@",
-	[[notification object] socketAddress],
-	[[notification object] socketService],
-        e);
+	@"failed connect to gdomap on %@ - %@",
+	[[notification object] socketAddress], e);
       /*
        * Remove our file handle, then either retry or fail.
        */
       [self close];
       if (launchCmd == nil)
 	{
-	  launchCmd = RETAIN([NSTask launchPathForTool: @"gdomap"]);
+	  launchCmd = [NSTask launchPathForTool: @"gdomap"];
 	}
       if (state == GSPC_LOPEN && launchCmd != nil)
 	{
@@ -253,9 +251,8 @@ typedef enum {
   if (d == nil || [d length] == 0)
     {
       [self fail];
-      NSLog(@"NSSocketPortNameServer lost connection to gdomap on %@:%@",
-	[[notification object] socketAddress],
-	[[notification object] socketService]);
+      NSLog(@"NSSocketPortNameServer lost connection to gdomap on %@",
+	[[notification object] socketAddress]);
     }
   else
     {
@@ -324,10 +321,8 @@ typedef enum {
   if (e != nil)
     {
       [self fail];
-      NSLog(@"NSSocketPortNameServer failed write to gdomap on %@:%@ - %@",
-	[[notification object] socketAddress],
-	[[notification object] socketService],
-        e);
+      NSLog(@"NSSocketPortNameServer failed write to gdomap on %@ - %@",
+	[[notification object] socketAddress], e);
     }
   else
     {
@@ -595,12 +590,7 @@ typedef enum {
 	}
       s = (NSSocketPortNameServer*)NSAllocateObject(self, 0,
 	NSDefaultMallocZone());
-      /* Use NSNonOwnedPointerMapKeyCallBacks for the ports used as keys
-       * since we want as pointer test for equality as we may be doing
-       * lookup while dealocating the port (in which case the -isEqual:
-       * method could fail).
-       */
-      s->_portMap = NSCreateMapTable(NSNonOwnedPointerMapKeyCallBacks,
+      s->_portMap = NSCreateMapTable(NSNonRetainedObjectMapKeyCallBacks,
 			NSObjectMapValueCallBacks, 0);
       s->_nameMap = NSCreateMapTable(NSObjectMapKeyCallBacks,
 			NSNonOwnedPointerMapValueCallBacks, 0);

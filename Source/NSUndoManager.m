@@ -21,7 +21,7 @@
    Boston, MA 02111 USA.
 
    <title>NSUndoManager class reference</title>
-   $Date: 2014-05-29 02:31:59 +0800 (四, 29  5 2014) $ $Revision: 37917 $
+   $Date: 2013-11-06 09:52:54 +0800 (三, 06 11 2013) $ $Revision: 37365 $
 */
 
 #import "common.h"
@@ -435,7 +435,7 @@
       if (_nextTarget == nil)
 	{
 	  [NSException raise: NSInternalInconsistencyException
-		      format: @"forwardInvocation without preparation"];
+		      format: @"forwardInvocation without perparation"];
 	}
       if (_group == nil)
 	{
@@ -745,9 +745,6 @@
 	}
       g = _group;
       sig = [target methodSignatureForSelector: aSelector];
-      NSAssert2(sig,@"No methodSignatureForSelector:%@ for target of class %@",
-		NSStringFromSelector(aSelector),
-		[target class]);
       inv = [NSInvocation invocationWithMethodSignature: sig];
       [inv retainArgumentsIncludingTarget: NO];
       [inv setTarget: target];

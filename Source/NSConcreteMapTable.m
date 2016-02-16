@@ -29,7 +29,6 @@
 #import "common.h"
 
 #import "Foundation/NSArray.h"
-#import "Foundation/NSAutoreleasePool.h"
 #import "Foundation/NSDictionary.h"
 #import "Foundation/NSEnumerator.h"
 #import "Foundation/NSException.h"
@@ -40,8 +39,6 @@
 #import "NSCallBacks.h"
 
 static Class	concreteClass = Nil;
-static unsigned instanceSize = 0;
-
 
 /* Here is the interface for the concrete class as used by the functions.
  */
@@ -78,7 +75,6 @@ typedef GSIMapNode_t *GSIMapNode;
 @end
 
 #define	GSI_MAP_TABLE_T	NSConcreteMapTable
-#define	GSI_MAP_TABLE_S	instanceSize
 
 #define	GSI_MAP_KTYPES	GSUNION_PTR | GSUNION_OBJ
 #define	GSI_MAP_VTYPES	GSUNION_PTR | GSUNION_OBJ
@@ -1193,7 +1189,6 @@ const NSMapTableValueCallBacks NSOwnedPointerMapValueCallBacks =
   if (concreteClass == Nil)
     {
       concreteClass = [NSConcreteMapTable class];
-      instanceSize = class_getInstanceSize(concreteClass);
     }
 #if	GS_WITH_GC
   /* We create a typed memory descriptor for map nodes.
@@ -1433,30 +1428,6 @@ const NSMapTableValueCallBacks NSOwnedPointerMapValueCallBacks =
 
   p->_x = self->cb.pf.v;
   return [p autorelease];
-}
-
-- (NSUInteger) sizeInBytesExcluding: (NSHashTable*)exclude
-{
-  NSUInteger	size = [super sizeInBytesExcluding: exclude];
-
-  if (size > 0)
-    {
-/* If we knew that this table held objects, we could return their size...
- *
- *    GSIMapEnumerator_t	enumerator = GSIMapEnumeratorForMap(self);
- *    GSIMapNode 		node = GSIMapEnumeratorNextNode(&enumerator);
- *
- *    while (node != 0)
- *      {
- *        node = GSIMapEnumeratorNextNode(&enumerator);
- *        size += [node->key.obj sizeInBytesExcluding: exclude];
- *        size += [node->value.obj sizeInBytesExcluding: exclude];
- *      }
- *    GSIMapEndEnumerator(&enumerator);
- */
-      size += GSIMapSize(self) - instanceSize;
-    }
-  return size;
 }
 @end
 

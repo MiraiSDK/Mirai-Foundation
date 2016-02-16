@@ -49,11 +49,6 @@ int main()
     PASS_EQUAL([fmt stringForObjectValue: num], @"  001234",
       "numeric and space padding OK")
 
-    [fmt setFormat: @"000"];
-    num = [[[NSNumber alloc] initWithInt: 10] autorelease];
-    PASS_EQUAL([fmt stringForObjectValue: num], @"010",
-      "numeric padding OK")
-
     [fmt setAllowsFloats: YES];
 
     num = [[[NSNumber alloc] initWithFloat: 1234.56] autorelease];

@@ -22,12 +22,11 @@
    Boston, MA 02111 USA.
 
    <title>NSSet class reference</title>
-   $Date: 2015-07-16 17:30:57 +0800 (四, 16  7 2015) $ $Revision: 38805 $
+   $Date: 2014-01-21 01:45:23 +0800 (二, 21  1 2014) $ $Revision: 37624 $
    */
 
 #import "common.h"
 #import "Foundation/NSArray.h"
-#import "Foundation/NSAutoreleasePool.h"
 #import "Foundation/NSSet.h"
 #import "Foundation/NSCoder.h"
 #import "Foundation/NSArray.h"
@@ -591,11 +590,6 @@ static Class NSMutableSet_concrete_class;
   return NO;
 }
 
-- (NSUInteger)_countForObject: (id)object
-{
-  return 1;
-}
-
 /**
  *  Return whether each set is subset of the other.
  */
@@ -608,19 +602,8 @@ static Class NSMutableSet_concrete_class;
       id	o, e = [self objectEnumerator];
 
       while ((o = [e nextObject]))
-        {
-	  if (![other member: o])
-            {
-	      return NO;
-            }
-         else
-           {
-             if ([self _countForObject: o] != [other _countForObject: o])
-               {
-                 return NO;
-               }
-           }
-        }
+	if (![other member: o])
+	  return NO;
     }
   /* xxx Recheck this. */
   return YES;
@@ -673,7 +656,7 @@ static Class NSMutableSet_concrete_class;
         {
           if ([path isEqualToString: @"@count"] == YES)
             {
-              result = [NSNumber numberWithUnsignedInteger: [self count]];
+              result = [NSNumber numberWithUnsignedInt: [self count]];
             }
           else
             {
@@ -688,7 +671,7 @@ static Class NSMutableSet_concrete_class;
 
           if ([op isEqualToString: @"@count"] == YES)
             {
-              result = [NSNumber numberWithUnsignedInteger: count];
+              result = [NSNumber numberWithUnsignedInt: count];
             }
           else if ([op isEqualToString: @"@avg"] == YES)
             {
@@ -998,30 +981,6 @@ static Class NSMutableSet_concrete_class;
     [self subclassResponsibility: _cmd];
     return 0;
 }
-
-- (NSUInteger) sizeInBytesExcluding: (NSHashTable*)exclude
-{
-  NSUInteger    size = [super sizeInBytesExcluding: exclude];
-
-  if (size > 0)
-    {
-      NSUInteger        count = [self count];
-
-      size += 3 * sizeof(void*) * count;
-      if (count > 0)
-        {
-          NSEnumerator          *enumerator = [self objectEnumerator];
-          NSObject              *o;
-
-          while ((o = [enumerator nextObject]) != nil)
-            {
-              size += [o sizeInBytesExcluding: exclude];
-            }
-        }
-    }
-  return size;
-}
-
 @end
 
 

@@ -134,7 +134,6 @@
 #import	<Foundation/NSURLResponse.h>
 #import	<Foundation/NSUserDefaults.h>
 #import	<Foundation/NSUserNotification.h>
-#import	<Foundation/NSUUID.h>
 #import	<Foundation/NSValue.h>
 #import	<Foundation/NSValueTransformer.h>
 #import <Foundation/NSXMLDocument.h>

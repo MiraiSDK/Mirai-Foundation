@@ -28,7 +28,7 @@
    Boston, MA 02111 USA.
 
    <title>NSString class reference</title>
-   $Date: 2015-11-02 07:28:18 +0800 (一, 02 11 2015) $ $Revision: 39114 $
+   $Date: 2014-03-19 16:26:48 +0800 (三, 19  3 2014) $ $Revision: 37757 $
 */
 
 /* Caveats:
@@ -108,23 +108,9 @@
 # include <unicode/usearch.h>
 #endif
 
-/* Create local inline versions of key functions for case-insensitive operations
- */
-#import "Additions/unicode/caseconv.h"
-static inline unichar
-uni_toupper(unichar ch)
-{
-  unichar result = gs_toupper_map[ch / 256][ch % 256];
-  return result ? result : ch;
-}
-static inline unichar
-uni_tolower(unichar ch)
-{
-  unichar result = gs_tolower_map[ch / 256][ch % 256];
-  return result ? result : ch;
-}
-
 #import "GNUstepBase/Unicode.h"
+
+#import "GSPrivate.h"
 
 extern BOOL GSScanDouble(unichar*, unsigned, double*);
 
@@ -163,7 +149,7 @@ static SEL	cMemberSel = 0;
 #define IS_BIT_SET(a,i) ((((a) & (1<<(i)))) > 0)
 
 static NSCharacterSet	*nonspace = nil;
-static NSData           *whitespaceBitmap;
+static NSData *whitespaceBitmap;
 static unsigned const char *whitespaceBitmapRep = NULL;
 #define GS_IS_WHITESPACE(X) IS_BIT_SET(whitespaceBitmapRep[(X)/8], (X) % 8)
 
@@ -637,7 +623,8 @@ GSICUCollatorOpen(NSStringCompareOptions mask, NSLocale *locale)
     {
       localeCString = [[locale localeIdentifier] UTF8String];
 
-      if (localeCString == NULL || strcmp("", localeCString) == 0)
+      if (localeCString == NULL
+	  || strcmp("", localeCString) == 0)
 	{
 	  return NULL;
 	}
@@ -804,7 +791,7 @@ GSICUCollatorOpen(NSStringCompareOptions mask, NSLocale *locale)
        * Set up infrastructure for placeholder strings.
        */
       defaultPlaceholderString = (GSPlaceholderString*)
-	[GSPlaceholderStringClass allocWithZone: NSDefaultMallocZone()];
+	NSAllocateObject(GSPlaceholderStringClass, 0, NSDefaultMallocZone());
       placeholderMap = NSCreateMapTable(NSNonOwnedPointerMapKeyCallBacks,
 	NSNonRetainedObjectMapValueCallBacks, 0);
       placeholderLock = [NSLock new];
@@ -866,7 +853,7 @@ GSICUCollatorOpen(NSStringCompareOptions mask, NSLocale *locale)
 	       * There is no placeholder object for this zone, so we
 	       * create a new one and use that.
 	       */
-	      obj = (id)[GSPlaceholderStringClass allocWithZone: z];
+	      obj = (id)NSAllocateObject(GSPlaceholderStringClass, 0, z);
 	      NSMapInsert(placeholderMap, (void*)z, (void*)obj);
 	    }
 	  [placeholderLock unlock];
@@ -995,14 +982,7 @@ GSICUCollatorOpen(NSStringCompareOptions mask, NSLocale *locale)
   if (NULL == bytes)
     [NSException raise: NSInvalidArgumentException
 		format: @"[NSString+stringWithUTF8String:]: NULL cString"];
-  if (self == NSStringClass)
-    {
-      obj = defaultPlaceholderString;
-    }
-  else
-    {
-      obj = [self allocWithZone: NSDefaultMallocZone()];
-    }
+  obj = [self allocWithZone: NSDefaultMallocZone()];
   obj = [obj initWithUTF8String: bytes];
   return AUTORELEASE(obj);
 }
@@ -2005,10 +1985,7 @@ GSICUCollatorOpen(NSStringCompareOptions mask, NSLocale *locale)
 
   search = NSMakeRange (0, [self length]);
   complete = search;
-  found = [self rangeOfString: separator
-                      options: 0
-                        range: search
-                       locale: nil];
+  found = [self rangeOfString: separator];
   while (found.length != 0)
     {
       NSRange current;
@@ -2021,8 +1998,7 @@ GSICUCollatorOpen(NSStringCompareOptions mask, NSLocale *locale)
 	complete.length - found.location - found.length);
       found = [self rangeOfString: separator
 			  options: 0
-			    range: search
-                           locale: nil];
+			    range: search];
     }
   // Add the last search string range
   [array addObject: [self substringWithRange: search]];
@@ -2235,8 +2211,7 @@ GSICUCollatorOpen(NSStringCompareOptions mask, NSLocale *locale)
 
   return [self rangeOfString: string
 		     options: 0
-		       range: all
-                      locale: nil];
+		       range: all];
 }
 
 /**
@@ -2250,8 +2225,7 @@ GSICUCollatorOpen(NSStringCompareOptions mask, NSLocale *locale)
 
   return [self rangeOfString: string
 		     options: mask
-		       range: all
-                      locale: nil];
+		       range: all];
 }
 
 /**
@@ -2293,10 +2267,7 @@ GSICUCollatorOpen(NSStringCompareOptions mask, NSLocale *locale)
                     range: (NSRange)searchRange
                    locale: (NSLocale *)locale
 {
-  NSUInteger    length = [self length];
-  NSUInteger    countOther;
-
-  GS_RANGE_CHECK(searchRange, length);
+  GS_RANGE_CHECK(searchRange, [self length]);
   if (aString == nil)
     [NSException raise: NSInvalidArgumentException format: @"range of nil"];
 
@@ -2324,362 +2295,24 @@ GSICUCollatorOpen(NSStringCompareOptions mask, NSLocale *locale)
       return r;
     }
 
-  countOther = [aString length];
-
-  /* A zero length string is always found at the start of the given range.
-   */
-  if (0 == countOther)
-    {
-      if ((mask & NSBackwardsSearch) == NSBackwardsSearch)
-        {
-          searchRange.location += searchRange.length;
-        }
-      searchRange.length = 0;
-      return searchRange;
-    }
-
-  /* If the string to search for is a single codepoint which is not
-   * decomposable to a sequence, then it can only match the identical
-   * codepoint, so we can perform the much cheaper literal search.
-   */
-  if (1 == countOther)
-    {
-      unichar   u = [aString characterAtIndex: 0];
-
-      if ((mask & NSLiteralSearch) == NSLiteralSearch || uni_is_decomp(u))
-        {
-          NSRange   result;
-
-          if (searchRange.length < countOther)
-            {
-              /* Range to search is smaller than string to look for.
-               */
-              result = NSMakeRange(NSNotFound, 0);
-            }
-          else if ((mask & NSAnchoredSearch) == NSAnchoredSearch
-            || searchRange.length == 1)
-            {
-              /* Range to search is a single character.
-               */
-              if ((mask & NSBackwardsSearch) == NSBackwardsSearch)
-                {
-                  searchRange.location = NSMaxRange(searchRange) - 1;
-                }
-              if ((mask & NSCaseInsensitiveSearch) == NSCaseInsensitiveSearch)
-                {
-                  u = uni_toupper(u);
-                  if (uni_toupper([self characterAtIndex: searchRange.location])
-                     == u)
-                    {
-                      result = searchRange;
-                    }
-                  else
-                    {
-                      result = NSMakeRange(NSNotFound, 0);
-                    }
-                }
-              else
-                {
-                  if ([self characterAtIndex: searchRange.location] == u)
-                    {
-                      result = searchRange;
-                    }
-                  else
-                    {
-                      result = NSMakeRange(NSNotFound, 0);
-                    }
-                }
-            }
-          else
-            {
-              NSUInteger    pos;
-              NSUInteger    end;
-
-              /* Range to search is bigger than string to look for.
-               */
-              GS_BEGINITEMBUF2(charsSelf, (searchRange.length*sizeof(unichar)),
-                unichar)
-              [self getCharacters: charsSelf range: searchRange];
-              end = searchRange.length;
-              if ((mask & NSCaseInsensitiveSearch) == NSCaseInsensitiveSearch)
-                {
-                  u = uni_toupper(u);
-                  if ((mask & NSBackwardsSearch) == NSBackwardsSearch)
-                    {
-                      pos = end;
-                      while (pos-- > 0)
-                        {
-                          if (uni_toupper(charsSelf[pos]) == u)
-                            {
-                              break;
-                            }
-                        }
-                    }
-                  else
-                    {
-                      pos = 0;
-                      while (pos < end)
-                        {
-                          if (uni_toupper(charsSelf[pos]) == u)
-                            {
-                              break;
-                            }
-                          pos++;
-                        }                        
-                    }
-                }
-              else
-                {
-                  if ((mask & NSBackwardsSearch) == NSBackwardsSearch)
-                    {
-                      pos = end;
-                      while (pos-- > 0)
-                        {
-                          if (charsSelf[pos] == u)
-                            {
-                              break;
-                            }
-                        }
-                    }
-                  else
-                    {
-                      pos = 0;
-                      while (pos < end)
-                        {
-                          if (charsSelf[pos] == u)
-                            {
-                              break;
-                            }
-                          pos++;
-                        }                        
-                    }
-                }
-              GS_ENDITEMBUF2()
-
-              if (pos >= end)
-                {
-                  result = NSMakeRange(NSNotFound, 0);
-                }
-              else
-                {
-                  result = NSMakeRange(searchRange.location + pos, countOther);
-                }
-            }
-          return result;
-        }
-    }
-
-  if ((mask & NSLiteralSearch) == NSLiteralSearch)
-    {
-      NSRange   result;
-      BOOL      insensitive;
-
-      if ((mask & NSCaseInsensitiveSearch) == NSCaseInsensitiveSearch)
-        {
-          insensitive = YES;
-        }
-      else
-        {
-          insensitive = NO;
-        }
-
-      if (searchRange.length < countOther)
-        {
-          /* Range to search is smaller than string to look for.
-           */
-          result = NSMakeRange(NSNotFound, 0);
-        }
-      else
-        {
-          GS_BEGINITEMBUF(charsOther, (countOther*sizeof(unichar)), unichar)
-
-          [aString getCharacters: charsOther range: NSMakeRange(0, countOther)];
-          if (YES == insensitive)
-            {
-              NSUInteger        index;
-
-              /* Make the substring we are searching for be uppercase.
-               */
-              for (index = 0; index < countOther; index++)
-                {
-                  charsOther[index] = uni_toupper(charsOther[index]);
-                }
-            }
-          if ((mask & NSAnchoredSearch) == NSAnchoredSearch
-            || searchRange.length == countOther)
-            {
-              /* Range to search is same size as string to look for.
-               */
-              GS_BEGINITEMBUF2(charsSelf, (countOther*sizeof(unichar)), unichar)
-              if ((mask & NSBackwardsSearch) == NSBackwardsSearch)
-                {
-                  searchRange.location = NSMaxRange(searchRange) - countOther;
-                  searchRange.length = countOther;
-                }
-              else
-                {
-                  searchRange.length = countOther;
-                }
-              [self getCharacters: charsSelf range: searchRange];
-              if (YES == insensitive)
-                {
-                  NSUInteger    index;
-
-                  for (index = 0; index < countOther; index++)
-                    {
-                      if (uni_toupper(charsSelf[index]) != charsOther[index])
-                        {
-                          break;
-                        }
-                    }
-                  if (index < countOther)
-                    {
-                      result = NSMakeRange(NSNotFound, 0);
-                    }
-                  else
-                    {
-                      result = searchRange;
-                    }
-                }
-              else
-                {
-                  if (memcmp(&charsSelf[0], &charsOther[0],
-                    countOther * sizeof(unichar)) == 0)
-                    {
-                      result = searchRange;
-                    }
-                  else
-                    {
-                      result = NSMakeRange(NSNotFound, 0);
-                    }
-                }
-              GS_ENDITEMBUF2()
-            }
-          else
-            {
-              NSUInteger    pos;
-              NSUInteger    end;
-
-              end = searchRange.length - countOther + 1;
-              if ((mask & NSBackwardsSearch) == NSBackwardsSearch)
-                {
-                  pos = end;
-                }
-              else
-                {
-                  pos = 0;
-                }
-              /* Range to search is bigger than string to look for.
-               */
-              GS_BEGINITEMBUF2(charsSelf, (searchRange.length*sizeof(unichar)),
-                unichar)
-              [self getCharacters: charsSelf range: searchRange];
-
-              if (YES == insensitive)
-                {
-                  NSUInteger        count;
-                  NSUInteger        index;
-
-                  /* Make things uppercase in the string being searched
-                   * Start with all but one of the characters in a substring
-                   * and we'll uppercase one more character each time we do
-                   * a comparison.
-                   */
-                  index = pos;
-                  for (count = 1; count < countOther; count++)
-                    {
-                      charsSelf[index] = uni_toupper(charsSelf[index]);
-                      index++;
-                    }
-                }
-
-              if ((mask & NSBackwardsSearch) == NSBackwardsSearch)
-                {
-                  if (YES == insensitive)
-                    {
-                      while (pos-- > 0)
-                        {
-                          charsSelf[pos] = uni_toupper(charsSelf[pos]);
-                          if (memcmp(&charsSelf[pos], charsOther,
-                            countOther * sizeof(unichar)) == 0)
-                            {
-                              break;
-                            }
-                        }
-                    }
-                  else
-                    {
-                      while (pos-- > 0)
-                        {
-                          if (memcmp(&charsSelf[pos], charsOther,
-                            countOther * sizeof(unichar)) == 0)
-                            {
-                              break;
-                            }
-                        }
-                    }
-                }
-              else
-                {
-                  if (YES == insensitive)
-                    {
-                      while (pos < end)
-                        {
-                          charsSelf[pos + countOther - 1]
-                            = uni_toupper(charsSelf[pos + countOther - 1]);
-                          if (memcmp(&charsSelf[pos], charsOther,
-                            countOther * sizeof(unichar)) == 0)
-                            {
-                              break;
-                            }
-                          pos++;
-                        }                        
-                    }
-                  else
-                    {
-                      while (pos < end)
-                        {
-                          if (memcmp(&charsSelf[pos], charsOther,
-                            countOther * sizeof(unichar)) == 0)
-                            {
-                              break;
-                            }
-                          pos++;
-                        }                        
-                    }
-                }
-
-              if (pos >= end)
-                {
-                  result = NSMakeRange(NSNotFound, 0);
-                }
-              else
-                {
-                  result = NSMakeRange(searchRange.location + pos, countOther);
-                }
-              GS_ENDITEMBUF2()
-            }
-          GS_ENDITEMBUF()
-        }
-      return result;
-    }
-
 #if GS_USE_ICU == 1
-  if (nil != locale && ![locale isKindOfClass: [NSLocale class]])
-    {
-      locale = [NSLocale currentLocale];
-    }
     {
       UCollator *coll = GSICUCollatorOpen(mask, locale);
 
       if (NULL != coll)
 	{
-	  NSRange       result = NSMakeRange(NSNotFound, 0);
-	  UErrorCode    status = U_ZERO_ERROR; 
-	  NSUInteger    countSelf = searchRange.length;
+	  NSRange result = NSMakeRange(NSNotFound, 0);
+	  UErrorCode status = U_ZERO_ERROR; 
+	  NSUInteger countSelf = searchRange.length;
+	  NSUInteger countOther = [aString length];       
+	  unichar *charsSelf;
+	  unichar *charsOther;
 	  UStringSearch *search = NULL;
-          GS_BEGINITEMBUF(charsSelf, (countSelf * sizeof(unichar)), unichar)
-          GS_BEGINITEMBUF2(charsOther, (countOther * sizeof(unichar)), unichar)
+
+	  charsSelf = NSZoneMalloc(NSDefaultMallocZone(),
+	    countSelf * sizeof(unichar));
+	  charsOther = NSZoneMalloc(NSDefaultMallocZone(),
+	    countOther * sizeof(unichar));
 
 	  // Copy to buffer
       
@@ -2693,7 +2326,6 @@ GSICUCollatorOpen(NSStringCompareOptions mask, NSLocale *locale)
 	    {
 	      int32_t matchLocation;
 	      int32_t matchLength;
-
 	      if ((mask & NSBackwardsSearch) == NSBackwardsSearch)
 		{		
 		  matchLocation = usearch_last(search, &status);
@@ -2733,8 +2365,8 @@ GSICUCollatorOpen(NSStringCompareOptions mask, NSLocale *locale)
 		    }
 		}
 	    }
-          GS_ENDITEMBUF2()
-          GS_ENDITEMBUF()
+	  NSZoneFree(NSDefaultMallocZone(), charsSelf);
+	  NSZoneFree(NSDefaultMallocZone(), charsOther);	  
 	  usearch_close(search);
 	  ucol_close(coll);
 	  return result;
@@ -2749,16 +2381,16 @@ GSICUCollatorOpen(NSStringCompareOptions mask, NSLocale *locale)
 {
   NSRange range = {0, [self length]};
 
-  range = [self rangeOfString: substring options: 0 range: range locale: nil];
+  range = [self rangeOfString: substring options: 0 range: range];
   return range.length ? range.location : NSNotFound;
 }
 
 - (NSUInteger) indexOfString: (NSString*)substring
-                   fromIndex: (NSUInteger)index
+		     fromIndex: (NSUInteger)index
 {
   NSRange range = {index, [self length] - index};
 
-  range = [self rangeOfString: substring options: 0 range: range locale: nil];
+  range = [self rangeOfString: substring options: 0 range: range];
   return range.length ? range.location : NSNotFound;
 }
 
@@ -2771,36 +2403,28 @@ GSICUCollatorOpen(NSStringCompareOptions mask, NSLocale *locale)
  */
 - (NSRange) rangeOfComposedCharacterSequenceAtIndex: (NSUInteger)anIndex
 {
-static NSCharacterSet	*nonbase = nil;
-static SEL              nbSel;
-static BOOL             (*nbImp)(id, SEL, unichar) = 0;
   unsigned	start;
   unsigned	end;
   unsigned	length = [self length];
   unichar	ch;
   unichar	(*caiImp)(NSString*, SEL, NSUInteger);
+  NSCharacterSet *nbSet = [NSCharacterSet nonBaseCharacterSet];
 
   if (anIndex >= length)
     [NSException raise: NSRangeException format:@"Invalid location."];
   caiImp = (unichar (*)(NSString*,SEL,NSUInteger))
     [self methodForSelector: caiSel];
 
-  if (nil == nonbase)
-    {
-      nonbase = [[NSCharacterSet nonBaseCharacterSet] retain];
-      nbSel = @selector(characterIsMember:);
-      nbImp = (BOOL(*)(id,SEL,unichar))[nonbase methodForSelector: nbSel];
-    }
   for (start = anIndex; start > 0; start--)
     {
       ch = (*caiImp)(self, caiSel, start);
-      if ((*nbImp)(nonbase, nbSel, ch) == NO)
+      if ([nbSet characterIsMember: ch] == NO)
         break;
     }
   for (end = start+1; end < length; end++)
     {
       ch = (*caiImp)(self, caiSel, end);
-      if ((*nbImp)(nonbase, nbSel, ch) == NO)
+      if ([nbSet characterIsMember: ch] == NO)
         break;
     }
 
@@ -2859,13 +2483,9 @@ static BOOL             (*nbImp)(id, SEL, unichar) = 0;
  */
 - (BOOL) hasPrefix: (NSString*)aString
 {
-  NSRange	range = NSMakeRange(0, [self length]);
-  NSUInteger    mask = NSLiteralSearch | NSAnchoredSearch;
+  NSRange	range;
 
-  range = [self rangeOfString: aString
-                      options: mask
-                        range: range
-                       locale: nil];
+  range = [self rangeOfString: aString options: NSAnchoredSearch];
   return (range.length > 0) ? YES : NO;
 }
 
@@ -2874,13 +2494,10 @@ static BOOL             (*nbImp)(id, SEL, unichar) = 0;
  */
 - (BOOL) hasSuffix: (NSString*)aString
 {
-  NSRange	range = NSMakeRange(0, [self length]);
-  NSUInteger    mask = NSLiteralSearch | NSAnchoredSearch | NSBackwardsSearch;
+  NSRange	range;
 
   range = [self rangeOfString: aString
-                      options: mask
-                        range: range
-                       locale: nil];
+                      options: NSAnchoredSearch | NSBackwardsSearch];
   return (range.length > 0) ? YES : NO;
 }
 
@@ -2894,9 +2511,12 @@ static BOOL             (*nbImp)(id, SEL, unichar) = 0;
     {
       return YES;
     }
-  if (anObject != nil && [anObject isKindOfClass: NSStringClass])
+  if (anObject != nil && GSObjCIsInstance(anObject) == YES)
     {
-      return [self isEqualToString: anObject];
+      if ([anObject isKindOfClass: NSStringClass])
+	{
+	  return [self isEqualToString: anObject];
+	}
     }
   return NO;
 }
@@ -2907,19 +2527,12 @@ static BOOL             (*nbImp)(id, SEL, unichar) = 0;
  */
 - (BOOL) isEqualToString: (NSString*)aString
 {
-  if (aString == self)
-    {
-      return YES;
-    }
   if ([self hash] != [aString hash])
-    {
-      return NO;
-    }
+    return NO;
+
   if (strCompNsNs(self, aString, 0, (NSRange){0, [self length]})
     == NSOrderedSame)
-    {
-      return YES;
-    }
+    return YES;
   return NO;
 }
 
@@ -4292,10 +3905,7 @@ static NSFileManager *fm = nil;
    * Look for a dot in the path ... if there isn't one, or if it is
    * immediately after the root or a path separator, there is no extension.
    */
-  range = [self rangeOfString: @"."
-                      options: NSBackwardsSearch
-                        range: range
-                       locale: nil];
+  range = [self rangeOfString: @"." options: NSBackwardsSearch range: range];
   if (range.length > 0 && range.location > root
     && pathSepMember([self characterAtIndex: range.location-1]) == NO)
     {
@@ -4622,8 +4232,7 @@ static NSFileManager *fm = nil;
    */
   r0 = [self rangeOfString: @"."
 		   options: NSBackwardsSearch
-		     range: range
-                    locale: nil];
+		     range: range];
   /*
    * Locate a path separator.
    */
@@ -5232,8 +4841,7 @@ static NSFileManager *fm = nil;
 
   // Condense ('/./') sequences.
   r = (NSRange){root, l-root};
-  while ((r = [s rangeOfString: @"." options: 0 range: r locale: nil]).length
-    == 1)
+  while ((r = [s rangeOfString: @"." options: 0 range: r]).length == 1)
     {
       if (r.location > 0 && r.location < l - 1
 	&& pathSepMember((*caiImp)(s, caiSel, r.location-1)) == YES
@@ -5276,8 +4884,7 @@ static NSFileManager *fm = nil;
    *	remove '/../' sequences and their matching parent directories.
    */
   r = (NSRange){root, l-root};
-  while ((r = [s rangeOfString: @".." options: 0 range: r locale: nil]).length
-    == 2)
+  while ((r = [s rangeOfString: @".." options: 0 range: r]).length == 2)
     {
       if (r.location > 0
 	&& pathSepMember((*caiImp)(s, caiSel, r.location-1)) == YES
@@ -5630,10 +5237,12 @@ static NSFileManager *fm = nil;
     [NSException raise: NSInvalidArgumentException format: @"compare with nil"];
 
 #if GS_USE_ICU == 1
-  if (nil != locale && ![locale isKindOfClass: [NSLocale class]])
+  if (nil != locale
+    && ![locale isKindOfClass: [NSLocale class]])
     {
       locale = [NSLocale currentLocale];
     }
+
     {
       UCollator *coll = GSICUCollatorOpen(mask, locale);
 
@@ -6075,17 +5684,6 @@ static NSFileManager *fm = nil;
   extern id	GSPropertyListFromStringsFormat(NSString *string);
 
   return GSPropertyListFromStringsFormat(self);
-}
-
-- (NSUInteger) sizeInBytesExcluding: (NSHashTable*)exclude
-{
-  NSUInteger    size = [super sizeInBytesExcluding: exclude];
-
-  if (size > 0)
-    {
-      size += sizeof(unichar) * [self length];
-    }
-  return size;
 }
 
 @end

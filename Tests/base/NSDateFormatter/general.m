@@ -1,7 +1,6 @@
 #import <Foundation/NSCalendar.h>
 #import <Foundation/NSDate.h>
 #import <Foundation/NSDateFormatter.h>
-#import <Foundation/NSDictionary.h>
 #import <Foundation/NSLocale.h>
 #import <Foundation/NSTimeZone.h>
 #import "Testing.h"

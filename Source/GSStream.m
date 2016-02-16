@@ -125,14 +125,10 @@ static RunLoopEventType typeForStream(NSStream *aStream)
 
 - (void) removeStream: (NSStream*)aStream mode: (NSString*)mode
 {
-  /* We may have added the stream more than once (eg if the stream -open
-   * method was called more than once, so we need to remove all event
-   * registrations.
-   */
   [self removeEvent: [aStream _loopID]
 	       type: typeForStream(aStream)
 	    forMode: mode
-		all: YES];
+		all: NO];
 }
 @end
 

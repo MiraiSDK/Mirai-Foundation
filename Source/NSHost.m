@@ -24,7 +24,7 @@
    Boston, MA 02111 USA.
 
    <title>NSHost class reference</title>
-   $Date: 2015-03-31 17:14:01 +0800 (二, 31  3 2015) $ $Revision: 38442 $
+   $Date: 2014-04-19 09:34:48 +0800 (六, 19  4 2014) $ $Revision: 37804 $
   */
 
 #import "common.h"
@@ -63,10 +63,7 @@ static id			null = nil;
 
 @interface NSHost (Private)
 - (void) _addName: (NSString*)name;
-#if     defined(HAVE_GETADDRINFO)
-- (id) _initWithAddrinfo: (struct addrinfo*)entry key: (NSString*)name;
-#endif
-- (id) _initWithHostEntry: (struct hostent*)entry key: (NSString*)name;
+- (id) _initWithHostEntry: (struct hostent*)entry key: (NSString*)key;
 + (NSMutableSet*) _localAddresses;
 @end
 
@@ -103,125 +100,6 @@ static id			null = nil;
   RELEASE(name);
   return self;
 }
-
-#if     defined(HAVE_GETADDRINFO)
-- (id) _initWithAddrinfo: (struct addrinfo*)entry key: (NSString*)name
-{
-  NSMutableSet		*names;
-  NSMutableSet		*addresses;
-  NSMutableSet		*extra;
-
-  if ((self = [super init]) == nil)
-    {
-      return nil;
-    }
-  if ([name isEqualToString: localHostName] == NO
-    && entry == (struct addrinfo*)NULL)
-    {
-      NSLog(@"Host '%@' init failed - perhaps the name/address is wrong or "
-	@"networking is not set up on your machine", name);
-      DESTROY(self);
-      return nil;
-    }
-  else if (name == nil && entry != (struct addrinfo*)NULL)
-    {
-      NSLog(@"Nil hostname supplied but network database entry is not empty");
-      DESTROY(self);
-      return nil;
-    }
-
-  names = [NSMutableSet new];
-  addresses = [NSMutableSet new];
-
-  if ([name isEqualToString: localHostName] == YES)
-    {
-      extra = [hostClass _localAddresses];
-    }
-  else
-    {
-      extra = nil;
-    }
-
-  for (;;)
-    {
-      struct addrinfo   *tmp;
-
-      /*
-       * We remove all the IP addresses that we have added to the host so
-       * far from the set of extra addresses available on the current host.
-       * Then we try to find a new network database entry for one of the
-       * remaining extra addresses, and loop round to add all the names
-       * and addresses for that entry.
-       */
-      [extra minusSet: addresses];
-      while (entry == 0 && [extra count] > 0)
-	{
-	  NSString	        *a = [extra anyObject];
-          struct addrinfo       hints;
-
-          memset(&hints, '\0', sizeof(hints));
-          hints.ai_flags = AI_CANONNAME;
-	  getaddrinfo([a UTF8String], 0, &hints, &entry);
-	  if (0 == entry)
-	    {
-	      /*
-	       * Can't find a database entry for this IP address, but since
-	       * we know the address is valid, we add it to the list of
-	       * addresses for this host anyway.
-	       */
-	      [addresses addObject: a];
-	      [extra removeObject: a];
-	    }
-	}
-      if (0 == entry)
-	{
-	  break;
-	}
-
-      for (tmp = entry; tmp != 0; tmp = tmp->ai_next)
-        {
-          if (tmp->ai_canonname && *tmp->ai_canonname)
-            {
-              NSString          *n;
-
-              n = [[NSString alloc] initWithUTF8String: tmp->ai_canonname];
-              [names addObject: n];
-              [n release];
-            }
-
-          if (tmp->ai_addrlen > 0)
-            {
-              char      host[NI_MAXHOST];
-              char      port[NI_MAXSERV];
-
-              if (0 == getnameinfo(tmp->ai_addr, tmp->ai_addrlen,
-                host, NI_MAXHOST, port, NI_MAXSERV, NI_NUMERICSERV))
-                {
-                  NSString      *a;
-
-                  a = [[NSString alloc] initWithUTF8String: host];
-                  [addresses addObject: a];
-                  [a release];
-                }
-            }
-        }
-      freeaddrinfo(entry);
-      entry = 0;
-    }
-
-  _names = [names copy];
-  RELEASE(names);
-  _addresses = [addresses copy];
-  RELEASE(addresses);
-
-  if (YES == _hostCacheEnabled)
-    {
-      [_hostCache setObject: self forKey: name];
-    }
-
-  return self;
-}
-#endif
 
 - (id) _initWithHostEntry: (struct hostent*)entry key: (NSString*)name
 {
@@ -451,6 +329,11 @@ myHostName()
 	    {
 	      if ([name isEqualToString: myHostName()] == YES)
 		{
+		  NSLog(@"No network address appears to be available "
+		    @"for this machine (%@) - using loopback address "
+		    @"(127.0.0.1)", name);
+		  NSLog(@"You probably need a line like '"
+		    @"127.0.0.1 %@ localhost' in your /etc/hosts file", name);
 		  host = [self hostWithAddress: @"127.0.0.1"];
 		  [host _addName: name];
 		}

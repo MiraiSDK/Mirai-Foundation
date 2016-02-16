@@ -4,10 +4,7 @@
  * might be from an earlier build.
  */
 
-#ifndef COMMON_H
-#define COMMON_H
-
-#include "config.h"
+#import	"config.h"
 
 #if	defined(HAVE_STRING_H)
 /* For POSIX strerror_r() and others
@@ -85,4 +82,3 @@
 #  endif
 #endif
 
-#endif /* COMMON_H */

@@ -22,8 +22,7 @@
    Boston, MA 02111 USA.
    */
 
-#include <windows.h>
-#include <winsock2.h>
+#define	_FILE_OFFSET_BITS 64
 
 #include "common.h"
 
@@ -46,6 +45,7 @@
 #import "../GSPrivate.h"
 #import "../GSNetwork.h"
 
+#include <winsock2.h>
 #include <fcntl.h>
 #include <sys/file.h>
 #include <sys/types.h>

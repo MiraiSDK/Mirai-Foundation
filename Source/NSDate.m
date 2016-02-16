@@ -24,7 +24,7 @@
    Boston, MA 02111 USA.
 
    <title>NSDate class reference</title>
-   $Date: 2014-12-23 08:31:46 +0800 (二, 23 12 2014) $ $Revision: 38257 $
+   $Date: 2013-10-15 06:30:33 +0800 (二, 15 10 2013) $ $Revision: 37230 $
    */
 
 #import "common.h"
@@ -48,11 +48,6 @@
 /* These constants seem to be what MacOS-X uses */
 #define DISTANT_FUTURE	63113990400.0
 #define DISTANT_PAST	-63113817600.0
-
-/* On older Solaris we don't have NAN nor nan() */
-#if defined(__sun) && defined(__SVR4) && !defined(NAN)
-#define NAN 0x7fffffffffffffff
-#endif
 
 const NSTimeInterval NSTimeIntervalSince1970 = 978307200.0;
 

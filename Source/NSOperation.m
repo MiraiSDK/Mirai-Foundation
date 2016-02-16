@@ -886,12 +886,9 @@ static NSOperationQueue *mainQueue = nil;
       internal->executing--;
       [object removeObserver: self
 		  forKeyPath: @"isFinished"];
-      [internal->lock unlock];
       [self willChangeValueForKey: @"operations"];
       [self willChangeValueForKey: @"operationCount"];
-      [internal->lock lock];
       [internal->operations removeObjectIdenticalTo: object];
-      [internal->lock unlock];
       [self didChangeValueForKey: @"operationCount"];
       [self didChangeValueForKey: @"operations"];
     }
@@ -900,8 +897,8 @@ static NSOperationQueue *mainQueue = nil;
       [object removeObserver: self
 		  forKeyPath: @"isReady"];
       [internal->waiting addObject: object];
-      [internal->lock unlock];
     }
+  [internal->lock unlock];
     
     if (self == mainQueue) {
         [self _mainQueueExecute];

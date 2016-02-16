@@ -43,7 +43,6 @@
 #import "Foundation/NSValue.h"
 #import "GNUstepBase/GSMime.h"
 #import "GNUstepBase/GSLock.h"
-#import "GNUstepBase/NSData+GNUstepBase.h"
 #import "GNUstepBase/NSString+GNUstepBase.h"
 #import "GNUstepBase/NSURL+GNUstepBase.h"
 #import "NSCallBacks.h"
@@ -231,62 +230,36 @@ static Class			sslClass = 0;
 static void
 debugRead(GSHTTPURLHandle *handle, NSData *data)
 {
-  int   	len = (int)[data length];
-  const uint8_t	*ptr = (const uint8_t*)[data bytes];
-  uint8_t       *hex;
-  NSUInteger    hl;
+  int		len = (int)[data length];
+  const char	*ptr = (const char*)[data bytes];
   int           pos;
 
-  hl = ((len + 2) / 3) * 4;
-  hex = malloc(hl + 1);
-  hex[hl] = '\0';
-  GSPrivateEncodeBase64(ptr, (NSUInteger)len, hex);
   for (pos = 0; pos < len; pos++)
     {
       if (0 == ptr[pos])
         {
-          char  *esc = [data escapedRepresentation: 0];
-
-          NSLog(@"Read for %p of %d bytes (escaped) - '%s'\n<[%s]>",
-            handle, len, esc, hex); 
-          free(esc);
-          free(hex);
+          NSLog(@"Read for %p of %d bytes - %@", handle, len, data); 
           return;
         }
     }
-  NSLog(@"Read for %p of %d bytes - '%*.*s'\n<[%s]>",
-    handle, len, len, len, ptr, hex); 
-  free(hex);
+  NSLog(@"Read for %p of %d bytes - '%*.*s'", handle, len, len, len, ptr); 
 }
 static void
 debugWrite(GSHTTPURLHandle *handle, NSData *data)
 {
-  int	        len = (int)[data length];
-  const uint8_t	*ptr = (const uint8_t*)[data bytes];
-  uint8_t       *hex;
-  NSUInteger    hl;
-  int           pos;
+  int		len = (int)[data length];
+  const char	*ptr = (const char*)[data bytes];
+  int           pos = len;
 
-  hl = ((len + 2) / 3) * 4;
-  hex = malloc(hl + 1);
-  hex[hl] = '\0';
-  GSPrivateEncodeBase64(ptr, (NSUInteger)len, hex);
   for (pos = 0; pos < len; pos++)
     {
       if (0 == ptr[pos])
         {
-          char  *esc = [data escapedRepresentation: 0];
-
-          NSLog(@"Write for %p of %d bytes (escaped) - '%s'\n<[%s]>",
-            handle, len, esc, hex); 
-          free(esc);
-          free(hex);
+          NSLog(@"Write for %p of %d bytes - %@", handle, len, data); 
           return;
         }
     }
-  NSLog(@"Write for %p of %d bytes - '%*.*s'\n<[%s]>",
-    handle, len, len, len, ptr, hex); 
-  free(hex);
+  NSLog(@"Write for %p of %d bytes -'%*.*s'", handle, len, len, len, ptr); 
 }
 
 + (NSURLHandle*) cachedHandleForURL: (NSURL*)newUrl
@@ -434,7 +407,6 @@ debugWrite(GSHTTPURLHandle *handle, NSData *data)
 
   if ((id)NSMapGet(wProperties, (void*)@"Host") == nil)
     {
-      NSString  *s = [u scheme];
       id	p = [u port];
       id	h = [u host];
 
@@ -442,16 +414,7 @@ debugWrite(GSHTTPURLHandle *handle, NSData *data)
 	{
 	  h = @"";	// Must use an empty host header
 	}
-      if (([s isEqualToString: @"http"] && [p intValue] == 80)
-        || ([s isEqualToString: @"https"] && [p intValue] == 443))
-        {
-          /* Some buggy systems object to the port being in the Host
-           * header when it's the default (optional) value.  To keep
-           * them happy let's omit it in those cases.
-           */
-          p = nil;
-        }
-      if (nil == p)
+      if (p == nil)
 	{
           NSMapInsert(wProperties, (void*)@"Host", (void*)h);
 	}
@@ -1188,7 +1151,6 @@ debugWrite(GSHTTPURLHandle *handle, NSData *data)
 	    NSLog(@"%@ %p restart on new connection",
 	      NSStringFromSelector(_cmd), self);
 	  [self _tryLoadInBackground: u];
-          RELEASE(self);
 	  return;
 	}
       NSLog(@"Failed to write command to socket - %@ %p %s",

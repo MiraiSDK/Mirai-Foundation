@@ -1,7 +1,7 @@
 1 Announcement
 **************
 
-The GNUstep Base Library, version 1.24.8, is now available.
+The GNUstep Base Library, version 1.24.6, is now available.
 
 1.1 What is the GNUstep Base Library?
 =====================================
@@ -18,28 +18,23 @@ portion of the OpenStep standard (the Foundation library).
    There is more information available at the GNUstep homepage at
 `http://www.gnustep.org'.
 
-1.2 Noteworthy changes in version `1.24.8'
+1.2 Noteworthy changes in version `1.24.6'
 ==========================================
 
-   * Performance optimisations (particularly in the use of tiny string
-     objects by the new objc runtime on 64bit systems).
+   * NSUUID implemented
 
-   * Thread naming and logging of threads by NSLog() has been made
-     consistent with the latest OSX releases, making debugging of
-     multithreaded code a little easier.
+   * New OSX version macros
 
-   * Sergei Golovin has added NSURLConnection regression tests (while
-     fixing a few bugs there).
+   * TLS support improvements
 
-   * As usual, this release also contains an update to include the most
-     recent international timezone data.
+   * Various new methods for OSX compatibility
 
-   * Various other bugfixes.
+   * Various other bugfixes
 
 1.3 Where can you get it?  How can you compile it?
 ==================================================
 
-The gnustep-base-1.24.8.tar.gz distribution file has been placed at
+The gnustep-base-1.24.6.tar.gz distribution file has been placed at
 `ftp://ftp.gnustep.org/pub/gnustep/core'.
 
 Please log bug reports on the GNUstep project page

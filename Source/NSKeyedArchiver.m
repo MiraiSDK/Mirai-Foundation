@@ -752,12 +752,12 @@ static NSDictionary *makeReference(unsigned ref)
 	return;
 
       case _C_INT:
-	o = [NSNumber numberWithInt: *(int*)address];
+	o = [NSNumber numberWithInt: *(NSInteger*)address];
 	[_enc setObject: o forKey: aKey];
 	return;
 
       case _C_UINT:
-	o = [NSNumber numberWithUnsignedInt: *(unsigned int*)address];
+	o = [NSNumber numberWithUnsignedInt: *(NSUInteger*)address];
 	[_enc setObject: o forKey: aKey];
 	return;
 
@@ -791,13 +791,6 @@ static NSDictionary *makeReference(unsigned ref)
 	o = [NSNumber numberWithDouble: *(double*)address];
 	[_enc setObject: o forKey: aKey];
 	return;
-
-#if __GNUC__ > 2 && defined(_C_BOOL)
-      case _C_BOOL:
-	o = [NSNumber numberWithInt: (NSInteger)*(_Bool*)address];
-	[_enc setObject: o forKey: aKey];
-	return;
-#endif
 
       case _C_STRUCT_B:
 	[NSException raise: NSInvalidArgumentException

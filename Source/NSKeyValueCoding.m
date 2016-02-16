@@ -21,7 +21,7 @@
    Boston, MA 02111 USA.
 
    <title>NSKeyValueCoding informal protocol reference</title>
-   $Date: 2015-05-22 23:34:25 +0800 (五, 22  5 2015) $ $Revision: 38524 $
+   $Date: 2014-04-27 02:39:34 +0800 (日, 27  4 2014) $ $Revision: 37814 $
    */
 
 #import "common.h"
@@ -287,7 +287,7 @@ static id ValueForKey(NSObject *self, const char *key, unsigned size)
 
 - (NSMutableSet*) mutableSetValueForKeyPath: (NSString*)aKey
 {
-  NSRange       r = [aKey rangeOfString: @"." options: NSLiteralSearch];
+  NSRange       r = [aKey rangeOfString: @"."];
 
   if (r.length == 0)
     {
@@ -309,7 +309,7 @@ static id ValueForKey(NSObject *self, const char *key, unsigned size)
 
 - (NSMutableArray*) mutableArrayValueForKeyPath: (NSString*)aKey
 {
-  NSRange       r = [aKey rangeOfString: @"." options: NSLiteralSearch];
+  NSRange       r = [aKey rangeOfString: @"."];
 
   if (r.length == 0)
     {
@@ -373,7 +373,7 @@ static id ValueForKey(NSObject *self, const char *key, unsigned size)
 
 - (void) setValue: (id)anObject forKeyPath: (NSString*)aKey
 {
-  NSRange       r = [aKey rangeOfString: @"." options: NSLiteralSearch];
+  NSRange       r = [aKey rangeOfString: @"."];
 #ifdef WANT_DEPRECATED_KVC_COMPAT
   IMP	        o = [self methodForSelector: @selector(takeValue:forKeyPath:)];
 
@@ -499,7 +499,7 @@ static id ValueForKey(NSObject *self, const char *key, unsigned size)
             forKeyPath: (NSString*)aKey
                  error: (NSError**)anError
 {
-  NSRange       r = [aKey rangeOfString: @"." options: NSLiteralSearch];
+  NSRange       r = [aKey rangeOfString: @"."];
 
   if (r.length == 0)
     {
@@ -532,7 +532,7 @@ static id ValueForKey(NSObject *self, const char *key, unsigned size)
 
 - (id) valueForKeyPath: (NSString*)aKey
 {
-  NSRange       r = [aKey rangeOfString: @"." options: NSLiteralSearch];
+  NSRange       r = [aKey rangeOfString: @"."];
 
   if (r.length == 0)
     {
@@ -858,7 +858,7 @@ static id ValueForKey(NSObject *self, const char *key, unsigned size)
 
 - (void) takeValue: (id)anObject forKeyPath: (NSString*)aKey
 {
-  NSRange	r = [aKey rangeOfString: @"." options: NSLiteralSearch];
+  NSRange	r = [aKey rangeOfString: @"."];
 
   GSOnceMLog(@"This method is deprecated, use -setValue:forKeyPath:");
   if (r.length == 0)

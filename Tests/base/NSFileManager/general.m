@@ -15,7 +15,6 @@ int main()
   NSDictionary *attr;
   NSString *dirInDir;
   NSString *str1,*str2;
-  NSString *tmp;
   NSError *err;
   NSDictionary *errInfo;
   BOOL exists;
@@ -175,10 +174,8 @@ NSLog(@"'%@', '%@'", NSUserName(), [attr fileOwnerAccountName]);
              attributes: nil];
   PASS(NO == [mgr contentsEqualAtPath: @"sub1/x" andPath: @"sub2/x"],
     "directories containing files with different content are not equal");
-  PASS(YES == [mgr removeFileAtPath: @"sub1" handler: nil],
-    "sub1 removed");
-  PASS(YES == [mgr removeFileAtPath: @"sub2" handler: nil],
-    "sub2 removed");
+  [mgr removeFileAtPath: @"sub1" handler: nil];
+  [mgr removeFileAtPath: @"sub2" handler: nil];
 
   err = nil;
   PASS([mgr createDirectoryAtPath: dirInDir
@@ -201,25 +198,13 @@ NSLog(@"'%@', '%@'", NSUserName(), [attr fileOwnerAccountName]);
   PASS([mgr fileExistsAtPath: dirInDir isDirectory: &isDir] && isDir == YES,
     "NSFileManager create directory and intermediate directory");
 
-  tmp = [mgr currentDirectoryPath];
-  exists = [mgr fileExistsAtPath: tmp isDirectory: &isDir];
-  PASS(YES == exists && YES == isDir, "current directory exists");
-  tmp = [tmp stringByDeletingLastPathComponent];
-  exists = [mgr fileExistsAtPath: tmp isDirectory: &isDir];
-  PASS(YES == exists && YES == isDir, "parent directory exists");
-  tmp = [tmp stringByDeletingLastPathComponent];
-  exists = [mgr fileExistsAtPath: tmp isDirectory: &isDir];
-  PASS(YES == exists && YES == isDir, "parent of parent directory exists");
-  [mgr changeCurrentDirectoryPath: tmp];
+  [mgr changeCurrentDirectoryPath: [[[mgr currentDirectoryPath] stringByDeletingLastPathComponent] stringByDeletingLastPathComponent]];
   exists = [mgr fileExistsAtPath: dir isDirectory: &isDir];
-  PASS(YES == exists && YES == isDir, "directory exists");
   if (exists && isDir)
     {
-      dir = [dir stringByStandardizingPath];
-      PASS([mgr removeFileAtPath: dir handler: nil], "removed directory");
-      PASS(![mgr fileExistsAtPath: dir], "directory no longer exists");
-GSPrintf(stdout, @"%@\n", dir);
-GSPrintf(stderr, @"%@\n", dir);
+      PASS([mgr removeFileAtPath: dir handler: nil],
+           "NSFileManager removes a directory");
+      PASS(![mgr fileExistsAtPath: dir],"directory no longer exists");
     }
   
   err = nil;

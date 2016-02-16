@@ -24,7 +24,7 @@
    Boston, MA 02111 USA.
 
    <title>NSScanner class reference</title>
-   $Date: 2015-06-26 16:52:23 +0800 (五, 26  6 2015) $ $Revision: 38693 $
+   $Date: 2014-01-20 17:29:17 +0800 (一, 20  1 2014) $ $Revision: 37621 $
 */
 
 #import "common.h"
@@ -1301,7 +1301,14 @@ GSScanDouble(unichar *buf, unsigned length, double *result)
     {
       /* Mantissa too long ... ignore excess.
        */
-      mantissaLength = 18;
+      if (19 == mantissaLength && (dotPos < 0 || dotPos >= mantissaLength))
+        {
+          mantissaLength--;
+        }
+      else
+        {
+          mantissaLength = 19;
+        }
     }
   if (dotPos < 0)
     {

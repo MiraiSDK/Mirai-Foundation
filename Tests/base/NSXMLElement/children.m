@@ -45,7 +45,7 @@ int main()
 
   PASS_EXCEPTION([root2 insertChild: child1 atIndex: 0],
     NSInternalInconsistencyException, 
-    "cannot add a child if it has a parent");
+    "cannot add a child to to parents");
   
   {
     NSXMLNode   *c;

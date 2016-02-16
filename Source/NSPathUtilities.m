@@ -26,7 +26,7 @@
    Boston, MA 02111 USA.
 
    <title>NSPathUtilities function reference</title>
-   $Date: 2014-11-05 23:31:19 +0800 (三, 05 11 2014) $ $Revision: 38162 $
+   $Date: 2014-01-14 15:21:10 +0800 (二, 14  1 2014) $ $Revision: 37601 $
    */
 
 /**
@@ -583,7 +583,7 @@ static void ExtractValuesFromConfig(NSDictionary *config)
     }
   [c removeObjectForKey: @"GNUSTEP_SYSTEM_DEFAULTS_FILE"];
 
-  /* If GNUSTEP_CREATE_LIBRARY_PATH is YES then we should ensure that the
+  /* If GNUSTEP_CREATE_DIRECTORIES is YES then we should ensure that the
    * per-user directory and the Library subdirectory exist so resources
    * can safely be stored in them.
    */

@@ -59,8 +59,7 @@ extern "C" {
  *      GSDebugAllocationClassList()
  *	GSDebugAllocationList()
  *	GSDebugAllocationListAll()
- *
- *      GSSetDebugAllocationFunctions()
+ * GSSetDebugAllocationFunctions()
  *
  * When the previous functions have allowed you to find a memory leak,
  * and you know that you are leaking objects of class XXX, but you are
@@ -70,9 +69,8 @@ extern "C" {
  * could slow down your system appreciably - use them only temporarily
  * and only in debugging systems):
  *
- *  GSDebugAllocationRecordObjects()
+ *  GSDebugAllocationActiveRecordingObjects()
  *  GSDebugAllocationListRecordedObjects() 
- *  GSDebugAllocationTagRecordedObject()
  */
 #ifndef	NDEBUG
 
@@ -87,147 +85,65 @@ GS_EXPORT void		GSDebugAllocationAdd(Class c, id o);
 GS_EXPORT void		GSDebugAllocationRemove(Class c, id o);
 
 /**
- * This function activates or deactivates object allocation debugging.<br />
- * Returns the previous state.<br />
- * You should call this function to activate
- * allocation debugging before using any of the other allocation
- * debugging functions such as GSDebugAllocationList() or
- * GSDebugAllocationTotal().<br />
- * Object allocation debugging
- * should not affect performance too much, and is very useful
- * as it allows you to monitor how many objects of each class
- * your application has allocated.
+ * Activates or deactivates object allocation debugging.
+ * Returns previous state.
  */
 GS_EXPORT BOOL		GSDebugAllocationActive(BOOL active);
 
 /**
- * <p>
- *   Returns the number
- *   of instances of the specified class which are currently
- *   allocated.  This number is very important to detect memory
- *   leaks.  If you notice that this number is constantly
- *   increasing without apparent reason, it is very likely a
- *   memory leak - you need to check that you are correctly
- *   releasing objects of this class, otherwise when your
- *   application runs for a long time, it will eventually
- *   allocate so many objects as to eat up all your system's
- *   memory ...
- * </p>
- * <p>
- *   This function, like the ones below, returns the number of
- *   objects allocated/released from the time when
- *   GSDebugAllocationActive() was first called.  A negative
- *   number means that in total, there are less objects of this
- *   class allocated now than there were when you called
- *   GSDebugAllocationActive(); a positive one means there are
- *   more.
- * </p>
+ * Returns the number of instances of the specified class
+ * which are currently allocated.
  */
 GS_EXPORT int		GSDebugAllocationCount(Class c);
 
 /**
- * Returns the peak
- * number of instances of the specified class which have been
- * concurrently allocated.  If this number is very high, it
- * means at some point in time you had a situation with a
- * huge number of objects of this class allocated - this is
- * an indicator that probably at some point in time your
- * application was using a lot of memory - so you might want
- * to investigate whether you can prevent this problem by
- * inserting autorelease pools in your application's
- * processing loops.
+ * Returns the peak number of instances of the specified class
+ * which have been concurrently allocated.
  */
 GS_EXPORT int		GSDebugAllocationPeak(Class c);
 
 /**
- * Returns the total
- * number of instances of the specified class c which have been
- * allocated - basically the number of times you have
- * allocated an object of this class.  If this number is very
- * high, it means you are creating a lot of objects of this
- * class; even if you are releasing them correctly, you must
- * not forget that allocating and deallocating objects is
- * usually one of the slowest things you can do, so you might
- * want to consider whether you can reduce the number of
- * allocations and deallocations that you are doing - for
- * example, by recycling objects of this class, uniquing
- * them, and/or using some sort of flyweight pattern.  It
- * might also be possible that you are unnecessarily creating
- * too many objects of this class.  Well - of course some times
- * there is nothing you can do about it.
+ * Returns the total number of instances of the specified class
+ * which have been allocated.
  */
 GS_EXPORT int		GSDebugAllocationTotal(Class c);
 
 /**
- * This function returns a NULL
- * terminated array listing all the classes for which
- * statistical information has been collected.  Usually, you
- * call this function, and then loop on all the classes returned,
- * and for each one you get current, peak and total count by
- * using GSDebugAllocationCount(), GSDebugAllocationPeak() and
- * GSDebugAllocationTotal().
+ * Returns a NULL terminated array listing all the classes 
+ * for which statistical information has been collected.
  */
 GS_EXPORT Class*        GSDebugAllocationClassList(void);
 
 /**
- * This function returns a newline separated list of the classes
- * which have instances allocated, and the instance counts.
- * If the 'changeFlag' argument is YES then the list gives the number
- * of instances allocated/deallocated since the function was
- * last called with that setting.  This function only returns the
- * current count of instances (not the peak or total count), but its
- * output is ready to be displayed or logged.
+ * Returns a newline separated list of the classes which
+ * have instances allocated, and the instance counts.
+ * If 'changeFlag' is YES then the list gives the number
+ * of instances allocated/deallocated since the function
+ * was last called.
  */
 GS_EXPORT const char*	GSDebugAllocationList(BOOL changeFlag);
 
 /**
- * This function returns a newline
- * separated list of the classes which have had instances
- * allocated at any point, and the total count of the number
- * of instances allocated for each class.  The difference with
- * GSDebugAllocationList() is that this function returns also
- * classes which have no objects allocated at the moment, but
- * which had in the past.
+ * Returns a newline separated list of the classes which
+ * have had instances allocated at any point, and the total
+ * count of the number of instances allocated for each class.
  */
 GS_EXPORT const char*	GSDebugAllocationListAll(void);
 
 /**
- * DEPRECATED ... use GSDebugAllocationRecordObjects instead.
+ * Starts recording all allocated objects of a certain class.<br />
+ * Use with extreme care ... this could slow down your application
+ * enormously.
  */
 GS_EXPORT void     GSDebugAllocationActiveRecordingObjects(Class c);
 
 /**
- * This function activates (or deactivates) tracking all allocated
- * instances of the specified class c.<br />
- * Turning on tracking implicitly turns on memory debug (counts)
- * for all classes (GSAllocationActive()).<br />
- * Deactivation of tracking releases all currently tracked instances
- * of the class (but deactivation of general counting does not).<br />
- * The previous tracking state as reported as the return value of
- * this function.<br />
- * This tracking can slow your application down, so you should use it
- * only when you are into serious debugging.
- * Usually, you will monitor your application by using the functions
- * GSDebugAllocationList() and similar, which do not slow things down
- * much and return * the number of allocated instances; when
- * (if) by studying the reports generated by these functions
- * you have found a leak of objects of a certain class, and
- * if you can't figure out how to fix it by looking at the
- * code, you can use this function to start tracking
- * allocated instances of that class, and the following one
- * can sometime allow you to list the leaked objects directly.
- */
-GS_EXPORT BOOL  GSDebugAllocationRecordObjects(Class c, BOOL newState);
-
-/**
- * This function returns an array
- * containing all the allocated objects of a certain class
- * which have been recorded ... to start the recording, you need
- * to invoke GSDebugAllocationRecordObjects().
- * Presumably, you will immediately call [NSObject-description] on them
- * to find out the objects you are leaking.  The objects are
- * returned in an autoreleased array, so until the array is deallocated,
- * the objects are not released.
+ * Returns an array containing all the allocated objects
+ * of a certain class which have been recorded.
+ * Presumably, you will immediately call [NSObject-description] on
+ * them to find out the objects you are leaking.
+ * Warning - the objects are put in an array, so until
+ * the array is autoreleased, the objects are not released.
  */
 GS_EXPORT NSArray *GSDebugAllocationListRecordedObjects(Class c);
 
@@ -237,9 +153,6 @@ GS_EXPORT NSArray *GSDebugAllocationListRecordedObjects(Class c);
  * with it (if any).<br />
  * If the object was not recorded, the method returns nil<br />
  * The tag is retained while it is associated with the object.<br />
- * If the tagged object is deallocated, the tag is released
- * (so you can track the lifetime of the object by having the tag
- * perform some operation when it is released).<br />
  * See also the NSDebugFRLog() and NSDebugMRLog() macros.
  */
 GS_EXPORT id GSDebugAllocationTagRecordedObject(id object, id tag);

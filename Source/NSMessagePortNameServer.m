@@ -20,7 +20,7 @@
    Boston, MA 02111 USA.
 
    <title>NSMessagePortNameServer class reference</title>
-   $Date: 2014-06-20 22:17:17 +0800 (五, 20  6 2014) $ $Revision: 37956 $
+   $Date: 2013-08-22 23:44:54 +0800 (四, 22  8 2013) $ $Revision: 37003 $
    */
 
 #import "common.h"
@@ -133,13 +133,8 @@ static NSMapTable *portToNamesMap;
       NSEnumerator	*files;
 
       serverLock = [NSRecursiveLock new];
-      /* Use NSNonOwnedPointerMapKeyCallBacks for the ports used as keys
-       * since we want as pointer test for equality as we may be doing
-       * lookup while dealocating the port (in which case the -isEqual:
-       * method could fail).
-       */
-      portToNamesMap = NSCreateMapTable(NSNonOwnedPointerMapKeyCallBacks,
-        NSObjectMapValueCallBacks, 0);
+      portToNamesMap = NSCreateMapTable(NSNonRetainedObjectMapKeyCallBacks,
+			 NSObjectMapValueCallBacks, 0);
       [self registerAtExit];
 
       /* It's possible that an old process, with the same process ID as

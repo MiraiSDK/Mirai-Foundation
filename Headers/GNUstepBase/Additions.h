@@ -30,10 +30,7 @@
 #import	<GNUstepBase/GSVersionMacros.h>
 #import	<GNUstepBase/GNUstep.h>
 
-
-#if !(defined(NeXT_RUNTIME) || defined(Apple_RUNTIME))
 #import	<GNUstepBase/GSBlocks.h>
-#endif
 #import	<GNUstepBase/GSFunctions.h>
 #import	<GNUstepBase/GSLocale.h>
 #import	<GNUstepBase/GSLock.h>

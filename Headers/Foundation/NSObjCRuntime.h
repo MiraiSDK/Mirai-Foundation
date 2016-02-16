@@ -37,7 +37,6 @@
 
 #import	<GNUstepBase/GSVersionMacros.h>
 #import	<GNUstepBase/GSConfig.h>
-#import	<GNUstepBase/GNUstep.h>
 #import	<GNUstepBase/GSBlocks.h>
 
 #include <stdarg.h>
@@ -125,46 +124,7 @@ typedef float           CGFloat;
 extern "C" {
 #endif
 
-
-/*
- * We can have strongly typed enums in C++11 mode or when the objc_fixed_enum
- * feature is availble.
- */
-#if (__has_feature(objc_fixed_enum) || (__cplusplus && (__cplusplus > 199711L) && __has_extension(cxx_strong_enums)))
-#  define _GS_NAMED_ENUM(ty, name) enum name : ty name; enum name : ty
-#  define _GS_ANON_ENUM(ty) enum : ty
-#  if __cplusplus
-#    define NS_OPTIONS(ty,name) ty name; enum : ty
-#  else
-#    define NS_OPTIONS(ty,name) NS_ENUM(ty,name)
-#  endif
-#else // this provides less information, but works with older compilers
-#  define _GS_NAMED_ENUM(ty, name) ty name; enum
-#  define _GS_ANON_ENUM(ty) enum
-#  define NS_OPTIONS(ty, name) NS_ENUM(ty, name)
-#endif
-// A bit of fairy dust to expand NS_ENUM to the correct variant
-#define _GS_GET_ENUM_MACRO(_first,_second,NAME,...) NAME
-/* The trick here is that placing the variadic args first will push the name
- * that the _GS_GET_ENUM_MACRO expands to into the correct position.
- */
-#define NS_ENUM(...) _GS_GET_ENUM_MACRO(__VA_ARGS__,_GS_NAMED_ENUM,_GS_ANON_ENUM)(__VA_ARGS__)
-
-/*
- * If the compiler supports nullability qualifiers, we define the macros for
- * non-null sections.
- */
-#if __has_feature(nullability)
-#  define NS_ASSUME_NONNULL_BEGIN _Pragma("clang assume_nonnull begin")
-#  define NS_ASSUME_NONNULL_END   _Pragma("clang assume_nonnull end")
-#else 
-#  define NS_ASSUME_NONNULL_BEGIN
-#  define NS_ASSUME_NONNULL_END
-#endif
-
-/** Bitfield used to specify options to control enumeration over collections.
- */
-typedef NS_OPTIONS(NSUInteger, NSEnumerationOptions)
+enum
 {
   NSEnumerationConcurrent = (1UL << 0), /** Specifies that the enumeration
    * is concurrency-safe.  Note that this does not mean that it will be
@@ -176,10 +136,11 @@ typedef NS_OPTIONS(NSUInteger, NSEnumerationOptions)
    */
 };
 
-
-/** Bitfield used to specify options to control the sorting of collections.
+/** Bitfield used to specify options to control enumeration over collections.
  */
-typedef NS_OPTIONS(NSUInteger, NSSortOptions)
+typedef NSUInteger NSEnumerationOptions;
+
+enum
 {
     NSSortConcurrent = (1UL << 0), /** Specifies that the sort
      * is concurrency-safe.  Note that this does not mean that it will be
@@ -190,6 +151,9 @@ typedef NS_OPTIONS(NSUInteger, NSSortOptions)
      */
 };
 
+/** Bitfield used to specify options to control the sorting of collections.
+ */
+typedef NSUInteger NSSortOptions;
 
 #import <GNUstepBase/GSObjCRuntime.h>
 

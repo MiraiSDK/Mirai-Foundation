@@ -22,7 +22,7 @@
    Boston, MA 02111 USA.
 
    <title>NSFileHandle class reference</title>
-   $Date: 2015-03-08 17:22:11 +0800 (日, 08  3 2015) $ $Revision: 38386 $
+   $Date: 2013-11-30 16:57:20 +0800 (六, 30 11 2013) $ $Revision: 37420 $
    */
 
 #import "common.h"
@@ -1001,14 +1001,12 @@ GSTLSHandlePush(gnutls_transport_ptr_t handle, const void *buffer, size_t len)
 
   if (YES == [session active])
     {
-      *result =  YES;
       return YES;	/* Already connected.	*/
     }
 
   if (YES == isStandardFile)
     {
       NSLog(@"Attempt to perform ssl handshake with a standard file");
-      *result =  NO;
       return YES;
     }
 
@@ -1048,11 +1046,6 @@ GSTLSHandlePush(gnutls_transport_ptr_t handle, const void *buffer, size_t len)
 
   if (NO == [session handshake])
     {
-      *result = NO;
-      if (nil == session)
-        {
-          return YES;   // Unable to create session
-        }
       return NO;        // Need more.
     }
   else

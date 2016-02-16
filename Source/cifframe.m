@@ -1,6 +1,6 @@
 /** cifframe.m - Wrapper/Objective-C interface for ffi function interface
 
-   Copyright (C) 1999-2015 Free Software Foundation, Inc.
+   Copyright (C) 1999, Free Software Foundation, Inc.
 
    Written by:  Adam Fedor <fedor@gnu.org>
    Date: Dec 1999, rewritten Apr 2002
@@ -30,11 +30,8 @@
 #endif
 
 #ifdef HAVE_MALLOC_H
-#if !defined(__OpenBSD__)
 #include <malloc.h>
 #endif
-#endif
-
 #ifdef HAVE_ALLOCA_H
 #include <alloca.h>
 #endif
@@ -540,10 +537,6 @@ cifframe_type(const char *typePtr, const char **advance)
 
     case _C_VOID: ftype = &ffi_type_void;
       break;
-#if __GNUC__ > 2 && defined(_C_BOOL)
-    case _C_BOOL: ftype = &ffi_type_uchar;
-      break;
-#endif
     default:
       ftype = &ffi_type_void;
       NSCAssert(0, @"Unknown type in sig");

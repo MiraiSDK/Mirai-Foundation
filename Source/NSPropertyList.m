@@ -36,7 +36,6 @@
 #import "Foundation/NSEnumerator.h"
 #import "Foundation/NSError.h"
 #import "Foundation/NSException.h"
-#import "Foundation/NSHashTable.h"
 #import "Foundation/NSPropertyList.h"
 #import "Foundation/NSSerialization.h"
 #import "Foundation/NSStream.h"
@@ -53,12 +52,6 @@
 
 static id       boolN = nil;
 static id       boolY = nil;
-
-static const char *prefix =
-  "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
-  "<!DOCTYPE plist PUBLIC \"-//Apple//DTD PLIST 1.0//EN\" "
-  "\"http://www.apple.com/DTDs/PropertyList-1.0.dtd\">\n"
-  "<plist version=\"1.0\">\n";
 
 @class  GSSloppyXMLParser;
 
@@ -458,7 +451,6 @@ foundIgnorableWhitespace: (NSString *)string
   unsigned		object_count;	// Number of objects
   unsigned		root_index;	// Index of root object
   unsigned		table_start;	// Start address of object table
-  NSHashTable           *_stack; // The stack of objects we are currently parsing
 }
 
 - (id) initWithData: (NSData*)plData
@@ -865,8 +857,8 @@ static inline id parseQuotedString(pldata* pld)
       NSZoneFree(NSDefaultMallocZone(), temp);
       length = k;
 
-      if (pld->key == NO
-        && pld->opt == NSPropertyListMutableContainersAndLeaves)
+      if (pld->key ==
+	NO && pld->opt == NSPropertyListMutableContainersAndLeaves)
 	{
 	  obj = [GSMutableString alloc];
 	  obj = [obj initWithCharactersNoCopy: chars
@@ -875,7 +867,7 @@ static inline id parseQuotedString(pldata* pld)
 	}
       else
 	{
-	  obj = [NSStringClass allocWithZone: NSDefaultMallocZone()];
+	  obj = [GSMutableString alloc];
 	  obj = [obj initWithCharactersNoCopy: chars
 				       length: length
 				 freeWhenDone: YES];
@@ -907,8 +899,7 @@ static inline id parseUnquotedString(pldata *pld)
       chars[i] = pld->ptr[start + i];
     }
 
-  if (pld->key == NO
-    && pld->opt == NSPropertyListMutableContainersAndLeaves)
+  if (pld->key == NO && pld->opt == NSPropertyListMutableContainersAndLeaves)
     {
       obj = [GSMutableString alloc];
       obj = [obj initWithCharactersNoCopy: chars
@@ -917,7 +908,7 @@ static inline id parseUnquotedString(pldata *pld)
     }
   else
     {
-      obj = [NSStringClass allocWithZone: NSDefaultMallocZone()];
+      obj = [GSMutableString alloc];
       obj = [obj initWithCharactersNoCopy: chars
 				   length: length
 			     freeWhenDone: YES];
@@ -1190,104 +1181,15 @@ static id parsePlItem(pldata* pld)
 	      }
 	    pld->pos++;
 	  }
-	else if (pld->pos < pld->end && pld->ptr[pld->pos] == '[')
-	  {
-	    const unsigned char	*ptr;
-	    unsigned		min;
-	    unsigned		len;
-
-	    pld->old = NO;
-	    pld->pos++;
-	    min = pld->pos;
-	    ptr = &(pld->ptr[min]);
-	    while (pld->pos < pld->end && pld->ptr[pld->pos] != ']')
-	      {
-		pld->pos++;
-	      }
-	    len = pld->pos - min;
-	    if (pld->pos >= pld->end)
-	      {
-		pld->err = @"unexpected end of string when parsing data";
-		return nil;
-	      }
-	    pld->pos++;
-	    if (pld->pos >= pld->end)
-	      {
-		pld->err = @"unexpected end of string when parsing ']>'";
-		return nil;
-	      }
-	    if (pld->ptr[pld->pos] != '>')
-	      {
-		pld->err = @"unexpected character (wanted '>')";
-		return nil;
-	      }
-	    pld->pos++;
-            if (0 == len)
-              {
-                if (pld->key == NO
-                  && pld->opt == NSPropertyListMutableContainersAndLeaves)
-                  {
-                    result = [NSMutableData new];
-                  }
-                else
-                  {
-                    result = [NSData new];
-                  }
-              }
-            else
-              {
-                NSData  *d;
-
-                d = [[NSData alloc] initWithBytesNoCopy: (void*)ptr
-                                                 length: len
-                                           freeWhenDone: NO];
-                NS_DURING
-                  {
-                    if (pld->key == NO
-                      && pld->opt == NSPropertyListMutableContainersAndLeaves)
-                      {
-                        result = [[NSMutableData alloc]
-                          initWithBase64EncodedData: d
-                          options: NSDataBase64DecodingIgnoreUnknownCharacters];
-                      }
-                    else
-                      {
-                        result = [[NSData alloc]
-                          initWithBase64EncodedData: d
-                          options: NSDataBase64DecodingIgnoreUnknownCharacters];
-                      }
-                  }
-                NS_HANDLER
-                  {
-                    pld->err = @"invalid base64 data";
-                    result = nil;
-                  }
-                NS_ENDHANDLER
-                RELEASE(d);
-              }
-	  }
 	else
 	  {
-	    unsigned	        max = pld->pos;
-	    unsigned char	*buf;
-	    unsigned	        len = 0;
+	    NSMutableData	*data;
+	    unsigned	max = pld->end - 1;
+	    unsigned	char	buf[BUFSIZ];
+	    unsigned	len = 0;
 
-	    while (max < pld->end && pld->ptr[max] != '>')
-	      {
-                if (isxdigit(pld->ptr[max]))
-                  {
-                    len++;
-                  }
-		max++;
-	      }
-            if (max >= pld->end)
-              {
-		pld->err = @"unexpected end of string when parsing data";
-		return nil;
-              }
-            buf = NSZoneMalloc(NSDefaultMallocZone(), (len + 1) / 2);
+	    data = [[NSMutableData alloc] initWithCapacity: 0];
 	    skipSpace(pld);
-            len = 0;
 	    while (pld->pos < max
 	      && isxdigit(pld->ptr[pld->pos])
 	      && isxdigit(pld->ptr[pld->pos+1]))
@@ -1299,28 +1201,32 @@ static id parsePlItem(pldata* pld)
 		byte |= char2num(pld->ptr[pld->pos]);
 		pld->pos++;
 		buf[len++] = byte;
+		if (len == sizeof(buf))
+		  {
+		    [data appendBytes: buf length: len];
+		    len = 0;
+		  }
 		skipSpace(pld);
 	      }
-            if (pld->ptr[pld->pos] != '>')
-              {
-                NSZoneFree(NSDefaultMallocZone(), buf);
-		pld->err = @"unexpected character (wanted '>')";
+	    if (pld->pos >= pld->end)
+	      {
+		pld->err = @"unexpected end of string when parsing data";
+		RELEASE(data);
 		return nil;
-              }
+	      }
+	    if (pld->ptr[pld->pos] != '>')
+	      {
+		pld->err = @"unexpected character (wanted '>')";
+		RELEASE(data);
+		return nil;
+	      }
+	    if (len > 0)
+	      {
+		[data appendBytes: buf length: len];
+	      }
 	    pld->pos++;
-            if (pld->key == NO
-              && pld->opt == NSPropertyListMutableContainersAndLeaves)
-              {
-                result = [[NSMutableData alloc] initWithBytesNoCopy: buf
-                                                             length: len
-                                                       freeWhenDone: YES];
-              }
-            else
-              {
-                result = [[NSData alloc] initWithBytesNoCopy: buf
-                                                      length: len
-                                                freeWhenDone: YES];
-              }
+	    // FIXME ... should be immutable sometimes.
+	    result = data;
 	  }
 	break;
 
@@ -1475,19 +1381,57 @@ GSPropertyListFromStringsFormat(NSString *string)
 
 #include <math.h>
 
+static char base64[]
+  = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+
 static void
 encodeBase64(NSData *source, NSMutableData *dest)
 {
-  NSUInteger	length = [source length];
+  int		length = [source length];
+  int		enclen = length / 3;
+  int		remlen = length - 3 * enclen;
+  int		destlen = 4 * ((length + 2) / 3);
+  unsigned char *sBuf;
+  unsigned char *dBuf;
+  int		sIndex = 0;
+  int		dIndex = [dest length];
 
-  if (length > 0)
+  [dest setLength: dIndex + destlen];
+
+  if (length == 0)
     {
-      NSUInteger	base = [dest length];
-      NSUInteger	destlen = 4 * ((length + 2) / 3);
+      return;
+    }
+  sBuf = (unsigned char*)[source bytes];
+  dBuf = [dest mutableBytes];
 
-      [dest setLength: base + destlen];
-      GSPrivateEncodeBase64((const uint8_t*)[source bytes],
-        length, (uint8_t*)[dest mutableBytes] + base);
+  for (sIndex = 0; sIndex < length - 2; sIndex += 3, dIndex += 4)
+    {
+      dBuf[dIndex] = base64[sBuf[sIndex] >> 2];
+      dBuf[dIndex + 1]
+	= base64[((sBuf[sIndex] << 4) | (sBuf[sIndex + 1] >> 4)) & 0x3f];
+      dBuf[dIndex + 2]
+	= base64[((sBuf[sIndex + 1] << 2) | (sBuf[sIndex + 2] >> 6)) & 0x3f];
+      dBuf[dIndex + 3] = base64[sBuf[sIndex + 2] & 0x3f];
+    }
+
+  if (remlen == 1)
+    {
+      dBuf[dIndex] = base64[sBuf[sIndex] >> 2];
+      dBuf[dIndex + 1] = (sBuf[sIndex] << 4) & 0x30;
+      dBuf[dIndex + 1] = base64[dBuf[dIndex + 1]];
+      dBuf[dIndex + 2] = '=';
+      dBuf[dIndex + 3] = '=';
+    }
+  else if (remlen == 2)
+    {
+      dBuf[dIndex] = base64[sBuf[sIndex] >> 2];
+      dBuf[dIndex + 1] = (sBuf[sIndex] << 4) & 0x30;
+      dBuf[dIndex + 1] |= sBuf[sIndex + 1] >> 4;
+      dBuf[dIndex + 1] = base64[dBuf[dIndex + 1]];
+      dBuf[dIndex + 2] = (sBuf[sIndex + 1] << 2) & 0x3c;
+      dBuf[dIndex + 2] = base64[dBuf[dIndex + 2]];
+      dBuf[dIndex + 3] = '=';
     }
 }
 
@@ -1932,18 +1876,12 @@ OAppend(id obj, NSDictionary *loc, unsigned lev, unsigned step,
     }
   else if ([obj isKindOfClass: NSDataClass])
     {
-      if (NSPropertyListXMLFormat_v1_0 == x)
+      if (x == NSPropertyListXMLFormat_v1_0)
 	{
 	  [dest appendBytes: "<data>\n" length: 7];
 	  encodeBase64(obj, dest);
 	  [dest appendBytes: "</data>\n" length: 8];
 	}
-      else if (NSPropertyListGNUstepFormat == x)
-        {
-          [dest appendBytes: "<[" length: 2];
-	  encodeBase64(obj, dest);
-          [dest appendBytes: "]>" length: 2];
-        }
       else
 	{
 	  const unsigned char	*src;
@@ -2452,6 +2390,12 @@ static BOOL	classInitialized = NO;
 
   if (aFormat == NSPropertyListXMLFormat_v1_0)
     {
+      const char *prefix =
+	"<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<!DOCTYPE plist "
+	"PUBLIC \"-//GNUstep//DTD plist 0.9//EN\" "
+	"\"http://www.gnustep.org/plist-0_9.xml\">\n"
+	"<plist version=\"0.9\">\n";
+
       [dest appendBytes: prefix length: strlen(prefix)];
       OAppend(aPropertyList, loc, 0, step > 3 ? 3 : step, aFormat, dest);
       [dest appendBytes: "</plist>" length: 8];
@@ -2515,6 +2459,12 @@ GSPropertyListMake(id obj, NSDictionary *loc, BOOL xml,
 
   if (style == NSPropertyListXMLFormat_v1_0)
     {
+      const char	*prefix =
+	"<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<!DOCTYPE plist "
+	"PUBLIC \"-//GNUstep//DTD plist 0.9//EN\" "
+	"\"http://www.gnustep.org/plist-0_9.xml\">\n"
+	"<plist version=\"0.9\">\n";
+
       [dest appendBytes: prefix length: strlen(prefix)];
       OAppend(obj, loc, 0, step > 3 ? 3 : step, style, dest);
       [dest appendBytes: "</plist>" length: 8];
@@ -2622,7 +2572,7 @@ GSPropertyListMake(id obj, NSDictionary *loc, BOOL xml,
             }
           
           if (length - index > 2
-            && bytes[index] == '<' && bytes[index+1] == '?')
+              && bytes[index] == '<' && bytes[index+1] == '?')
             {
               // It begins with '<?' so it is xml
               format = NSPropertyListXMLFormat_v1_0;
@@ -2630,7 +2580,7 @@ GSPropertyListMake(id obj, NSDictionary *loc, BOOL xml,
           else
             {
               // Assume openstep format unless we find otherwise.
-              format = NSPropertyListOpenStepFormat;
+          format = NSPropertyListOpenStepFormat;
             }
         }
     }
@@ -2830,18 +2780,10 @@ GSPropertyListMake(id obj, NSDictionary *loc, BOOL xml,
 
 
 @implementation GSBinaryPLParser
-#define PUSH_OBJ(index) if (NO == [self _pushObject: index]) \
-        { \
-          [NSException raise: NSGenericException \
-                      format: @"Cyclic object graph"]; \
-        } 
-
-#define POP_OBJ(index) do { [self _popObject: index]; } while (0)
 
 - (void) dealloc
 {
   DESTROY(data);
-  DESTROY(_stack);
   [super dealloc];
 }
 
@@ -2981,15 +2923,14 @@ NSAssert(pos + 2 < _length, NSInvalidArgumentException);
       *counter = pos;
       return count;
     }
-  // FIXME: Handling for 0x13 is wrong, but this value will only
-  // show up for incorrect old GNUstep property lists.
-  else if ((c == 0x12) || (c == 0x13))
+  else if ((c > 0x11) && (c <= 0x13))
     {
-      unsigned len = 4;
+      unsigned len = c - 0x10;
 
-NSAssert(pos + 4 < _length, NSInvalidArgumentException);
+NSAssert(pos + 1 < _length, NSInvalidArgumentException);
       count = _bytes[pos++];
-      while (--len > 0)
+NSAssert(pos + count < _length, NSInvalidArgumentException);
+      while (len-- > 0)
         {
           count = (count << 8) + _bytes[pos++];
         }
@@ -3008,28 +2949,6 @@ NSAssert(pos + 4 < _length, NSInvalidArgumentException);
 - (id) rootObject
 {
   return [self objectAtIndex: root_index];
-}
-
-- (BOOL)_pushObject: (NSUInteger)index
-{
-  uintptr_t val;
-  if (nil == _stack)
-    {
-      _stack = NSCreateHashTable(NSIntegerHashCallBacks,
-                                 5);
-    }
-  val = (index == 0) ? UINTPTR_MAX : (uintptr_t)(void*)index;
-  // NSHashInsertIfAbsent() returns NULL on success
-  return NO == NSHashInsertIfAbsent(_stack, (void*)val);
-}
-
-- (void)_popObject: (NSUInteger)index
-{
-  if (_stack != nil)
-    {
-      uintptr_t val = (index == 0) ? UINTPTR_MAX : (uintptr_t)(void*)index;
-      NSHashRemove(_stack, (void*)val);
-    }
 }
 
 - (id) objectAtIndex: (NSUInteger)index
@@ -3235,14 +3154,14 @@ NSAssert(counter + len <= _length, NSInvalidArgumentException);
       unsigned	len = next - 0xA0;
       unsigned	i;
       id	objects[len];
-      PUSH_OBJ(index);
+
       for (i = 0; i < len; i++)
         {
 	  int oid = [self readObjectIndexAt: &counter];
 
 	  objects[i] = [self objectAtIndex: oid];
 	}
-      POP_OBJ(index);
+
       if (mutability == NSPropertyListMutableContainersAndLeaves
 	|| mutability == NSPropertyListMutableContainers)
 	{
@@ -3262,14 +3181,14 @@ NSAssert(counter + len <= _length, NSInvalidArgumentException);
 
       len = [self readCountAt: &counter];
       objects = NSAllocateCollectable(sizeof(id) * len, NSScannedOption);
-      PUSH_OBJ(index);
+
       for (i = 0; i < len; i++)
         {
 	  int oid = [self readObjectIndexAt: &counter];
 
 	  objects[i] = [self objectAtIndex: oid];
 	}
-      POP_OBJ(index);
+
       if (mutability == NSPropertyListMutableContainersAndLeaves
 	|| mutability == NSPropertyListMutableContainers)
 	{
@@ -3288,13 +3207,14 @@ NSAssert(counter + len <= _length, NSInvalidArgumentException);
       unsigned	i;
       id	keys[len];
       id	values[len];
-      PUSH_OBJ(index);
+
       for (i = 0; i < len; i++)
         {
 	  int oid = [self readObjectIndexAt: &counter];
 
 	  keys[i] = [self objectAtIndex: oid];
 	}
+
       for (i = 0; i < len; i++)
         {
 	  int oid = [self readObjectIndexAt: &counter];
@@ -3302,7 +3222,6 @@ NSAssert(counter + len <= _length, NSInvalidArgumentException);
 	  values[i] = [self objectAtIndex: oid];
 	}
 
-      POP_OBJ(index);
       if (mutability == NSPropertyListMutableContainersAndLeaves
 	|| mutability == NSPropertyListMutableContainers)
 	{
@@ -3328,7 +3247,6 @@ NSAssert(counter + len <= _length, NSInvalidArgumentException);
       len = [self readCountAt: &counter];
       keys = NSAllocateCollectable(sizeof(id) * len * 2, NSScannedOption);
       values = keys + len;
-      PUSH_OBJ(index);
       for (i = 0; i < len; i++)
         {
 	  int oid = [self readObjectIndexAt: &counter];
@@ -3342,7 +3260,7 @@ NSAssert(counter + len <= _length, NSInvalidArgumentException);
 
 	  values[i] = [self objectAtIndex: oid];
 	}
-      POP_OBJ(index);
+
       if (mutability == NSPropertyListMutableContainersAndLeaves
 	|| mutability == NSPropertyListMutableContainers)
 	{
@@ -3366,8 +3284,7 @@ NSAssert(counter + len <= _length, NSInvalidArgumentException);
 
   return result;
 }
-#undef PUSH_OBJ
-#undef POP_OBJ
+
 @end
 
 /* Test two items for equality ... both are objects.
@@ -3716,7 +3633,7 @@ isEqualFunc(const void *item1, const void *item2,
     }
   else
     {
-      code = 0x12;
+      code = 0x13;
       [dest appendBytes: &code length: 1];
       count = NSSwapHostIntToBig(count);
       [dest appendBytes: &count length: 4];

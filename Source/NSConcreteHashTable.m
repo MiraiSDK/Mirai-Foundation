@@ -29,7 +29,6 @@
 #import "common.h"
 
 #import "Foundation/NSArray.h"
-#import "Foundation/NSAutoreleasePool.h"
 #import "Foundation/NSDictionary.h"
 #import "Foundation/NSEnumerator.h"
 #import "Foundation/NSException.h"
@@ -41,8 +40,6 @@
 #import "GSPrivate.h"
 
 static Class	concreteClass = Nil;
-static unsigned instanceSize = 0;
-
 
 /* Here is the interface for the concrete class as used by the functions.
  */
@@ -75,7 +72,6 @@ typedef GSIMapNode_t *GSIMapNode;
 #define	GSI_MAP_HAS_VALUE	0
 #define	GSI_MAP_KTYPES	GSUNION_PTR | GSUNION_OBJ
 #define	GSI_MAP_TABLE_T	NSConcreteHashTable
-#define	GSI_MAP_TABLE_S	instanceSize
 
 #define GSI_MAP_HASH(M, X)\
  (M->legacy ? M->cb.old.hash(M, X.ptr) \
@@ -835,7 +831,6 @@ const NSHashTableCallBacks NSPointerToStructHashCallBacks =
   if (concreteClass == Nil)
     {
       concreteClass = [NSConcreteHashTable class];
-      instanceSize = class_getInstanceSize(concreteClass);
     }
 #if	GS_WITH_GC
   /* We create a typed memory descriptor for hash nodes.
@@ -1070,28 +1065,6 @@ const NSHashTableCallBacks NSPointerToStructHashCallBacks =
     }
 }
 
-- (NSUInteger) sizeInBytesExcluding: (NSHashTable*)exclude
-{
-  NSUInteger	size = [super sizeInBytesExcluding: exclude];
-
-  if (size > 0)
-    {
-/* If we knew that this table held objects, we could return their size...
- *
- *    GSIMapEnumerator_t	enumerator = GSIMapEnumeratorForMap(self);
- *    GSIMapNode 		node = GSIMapEnumeratorNextNode(&enumerator);
- *
- *    while (node != 0)
- *      {
- *        node = GSIMapEnumeratorNextNode(&enumerator);
- *        size += [node->key.obj sizeInBytesExcluding: exclude];
- *      }
- *    GSIMapEndEnumerator(&enumerator);
- */
-      size += GSIMapSize(self) - instanceSize;
-    }
-  return size;
-}
 @end
 
 @implementation NSConcreteHashTableEnumerator

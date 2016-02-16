@@ -22,7 +22,7 @@
    Boston, MA 02111 USA.
 
    <title>NSLog reference</title>
-   $Date: 2015-07-15 04:41:10 +0800 (三, 15  7 2015) $ $Revision: 38795 $
+   $Date: 2013-07-03 14:46:41 +0800 (三, 03  7 2013) $ $Revision: 36810 $
    */
 
 #import "common.h"
@@ -37,13 +37,11 @@
 #import "Foundation/NSThread.h"
 #import "GNUstepBase/NSString+GNUstepBase.h"
 
-// Some older BSD systems used a non-standard range of thread priorities.
 #ifdef	HAVE_SYSLOG_H
 #include <syslog.h>
 #elif HAVE_SYS_SLOG_H
-  /* we are on a QNX-ish system, which has a syslog symbol somewhere,
-   * but it isn't our syslog function (we use slogf().)
-   */
+  // we are on a QNX-ish system, which has a syslog symbol somewhere, but it isn't
+  // our syslog function (we use slogf().)
 # ifdef HAVE_SYSLOG
 #   undef HAVE_SYSLOG
 # endif
@@ -87,8 +85,6 @@ extern NSThread	*GSCurrentThread();
 int _NSLogDescriptor = 2;
 
 static NSRecursiveLock	*myLock = nil;
-static IMP              lockImp = 0;
-static IMP              unlockImp = 0;
 
 /**
  * Returns the lock used to protect the GNUstep NSLogv() implementation.
@@ -105,8 +101,6 @@ GSLogLock()
       if (myLock == nil)
 	{
 	  myLock = [NSRecursiveLock new];
-          lockImp = [myLock methodForSelector: @selector(lock)];
-          unlockImp = [myLock methodForSelector: @selector(unlock)];
 	}
       [gnustep_global_lock unlock];
     }
@@ -307,13 +301,9 @@ NSLog(NSString* format, ...)
  * </p>
  * <p>
  *   In GNUstep, the GSLogThread user default may be set to YES in
- *   order to instruct this function to include the name (if any)
- *   of the current thread after the process ID.  This can help you
- *   to track the behavior of a multi-threaded program.<br />
- *   Also the GSLogOffset user default may be set to YES in order
- *   to instruct this function to include the time zone offset in
- *   the timestamp it logs (good when examining debug logs from
- *   systems running in different countries).
+ *   order to instruct this function to include the internal ID of
+ *   the current thread after the process ID.  This can help you
+ *   to track the behavior of a multi-threaded program.
  * </p>
  * <p>
  *   The resulting message is then passed to a handler function to
@@ -331,11 +321,10 @@ NSLog(NSString* format, ...)
 void
 NSLogv(NSString* format, va_list args)
 {
-  NSMutableString	*prefix;
-  NSString              *message;
-  NSString              *threadName = nil;
-  NSThread              *t = nil;
+  NSString		*prefix;
+  NSString		*message;
   static int		pid = 0;
+  NSAutoreleasePool	*arp = [NSAutoreleasePool new];
 
   if (_NSLog_printf_handler == NULL)
     {
@@ -351,91 +340,62 @@ NSLogv(NSString* format, va_list args)
 #endif
     }
 
-  if (GSPrivateDefaultsFlag(GSLogThread) == YES)
-    {
-      /* If no name has been set for the current thread,
-       * we log the address of the NSThread object instead.
-       */
-      t = GSCurrentThread();
-      threadName = [t name];
-    }
-
-  prefix = [[NSMutableString alloc] initWithCapacity: 1000];
-
 #ifdef	HAVE_SYSLOG
   if (GSPrivateDefaultsFlag(GSLogSyslog) == YES)
     {
-      if (nil == t)
-        {
-          [prefix appendFormat: @"[thread:%"PRIuPTR"] ",
-            GSPrivateThreadID()];
-        }
-      else if (nil == threadName)
-        {
-          [prefix appendFormat: @"[thread:%"PRIuPTR",%p] ",
-            GSPrivateThreadID(), t];
-        }
+      if (GSPrivateDefaultsFlag(GSLogThread) == YES)
+	{
+	  prefix = [NSString stringWithFormat: @"[thread:%"PRIxPTR"] ",
+	    (NSUInteger)GSCurrentThread()];
+	}
       else
-        {
-          [prefix appendFormat: @"[thread:%"PRIuPTR",%@] ",
-            GSPrivateThreadID(), threadName];
-        }
+	{
+	  prefix = @"";
+	}
     }
   else
 #endif
     {
-      NSString  *fmt;
-      NSString  *cal;
-
-      if (GSPrivateDefaultsFlag(GSLogOffset) == YES)
-        {
-          fmt = @"%Y-%m-%d %H:%M:%S.%F %z";
-        }
+      if (GSPrivateDefaultsFlag(GSLogThread) == YES)
+	{
+	  prefix = [NSString
+	    stringWithFormat: @"%@ %@[%d,%"PRIxPTR"x] ",
+	    [[NSCalendarDate calendarDate]
+	      descriptionWithCalendarFormat: @"%Y-%m-%d %H:%M:%S.%F"],
+	    [[NSProcessInfo processInfo] processName],
+	    pid, (NSUInteger)GSCurrentThread()];
+	}
       else
-        {
-          fmt = @"%Y-%m-%d %H:%M:%S.%F";
-        }
-      cal = [[NSCalendarDate calendarDate] descriptionWithCalendarFormat: fmt];
-
-      [prefix appendString: cal];
-      [prefix appendString: @" "];
-      [prefix appendString: [[NSProcessInfo processInfo] processName]];
-      if (nil == t)
-        {
-          [prefix appendFormat: @"[%d:%"PRIuPTR"] ",
-            pid, GSPrivateThreadID()];
-        }
-      else if (nil == threadName)
-        {
-          [prefix appendFormat: @"[%d:%"PRIuPTR",%p] ",
-            pid, GSPrivateThreadID(), t];
-        }
-      else
-        {
-          [prefix appendFormat: @"[%d:%"PRIuPTR",%@] ",
-            pid, GSPrivateThreadID(), threadName];
-        }
+	{
+	  prefix = [NSString
+	    stringWithFormat: @"%@ %@[%d] ",
+	    [[NSCalendarDate calendarDate]
+	      descriptionWithCalendarFormat: @"%Y-%m-%d %H:%M:%S.%F"],
+	    [[NSProcessInfo processInfo] processName],
+	    pid];
+	}
     }
 
-  message = [[NSString alloc] initWithFormat: format arguments: args];
-  [prefix appendString: message];
-  [message release];
-  if ([prefix hasSuffix: @"\n"] ==  NO)
+  /* Check if there is already a newline at the end of the format */
+  if ([format hasSuffix: @"\n"] == NO)
     {
-      [prefix appendString: @"\n"];
+      format = [format stringByAppendingString: @"\n"];
     }
+  message = [NSString stringWithFormat: format arguments: args];
 
-  if (nil == myLock)
+  prefix = [prefix stringByAppendingString: message];
+
+  if (myLock == nil)
     {
       GSLogLock();
     }
 
-  (*lockImp)(myLock, @selector(lock));
+  [myLock lock];
 
   _NSLog_printf_handler(prefix);
 
-  (*unlockImp)(myLock, @selector(unlock));
+  [myLock unlock];
 
-  [prefix release];
+  [arp drain];
 }
 

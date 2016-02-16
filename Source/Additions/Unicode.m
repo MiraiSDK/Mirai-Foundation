@@ -396,7 +396,7 @@ EntrySupported(NSStringEncoding enc)
 
   if (entry == 0)
     {
-      return NULL;
+      return NO;
     }
 #ifdef HAVE_ICONV
   if (entry->iconv != 0 && entry->supported == 0)
@@ -2068,9 +2068,9 @@ bases:
 		    uint8_t	*tmp;
 
 #if	GS_WITH_GC
-		    tmp = NSAllocateCollectable(slen + extra, 0);
+		    tmp = NSAllocateCollectable(slen, 0);
 #else
-		    tmp = NSZoneMalloc(zone, slen + extra);
+		    tmp = NSZoneMalloc(zone, slen);
 		    if (ptr != buf && ptr != *dst)
 		      {
 			NSZoneFree(zone, ptr);

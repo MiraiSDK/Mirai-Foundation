@@ -38,7 +38,6 @@ typedef struct {
   NSString			*method;
   NSMutableDictionary		*headers;
   BOOL				shouldHandleCookies;
-  BOOL                          debug;
   NSURL				*URL;
   NSURL				*mainDocumentURL;
   NSURLRequestCachePolicy	cachePolicy;
@@ -115,7 +114,6 @@ typedef struct {
 	  ASSIGN(inst->bodyStream, this->bodyStream);
 	  ASSIGN(inst->method, this->method);
 	  inst->shouldHandleCookies = this->shouldHandleCookies;
-	  inst->debug = this->debug;
           inst->headers = [this->headers mutableCopy];
 	}
     }
@@ -270,15 +268,9 @@ typedef struct {
       ASSIGN(inst->bodyStream, this->bodyStream);
       ASSIGN(inst->method, this->method);
       inst->shouldHandleCookies = this->shouldHandleCookies;
-      inst->debug = this->debug;
       inst->headers = [this->headers mutableCopy];
     }
   return o;
-}
-
-- (void) setDebug: (BOOL)flag
-{
-  this->debug = flag;
 }
 
 - (NSTimeInterval) timeoutInterval
@@ -435,12 +427,6 @@ typedef struct {
 @end
 
 @implementation	NSURLRequest (Private)
-
-- (BOOL) _debug
-{
-  return this->debug;
-}
-
 - (id) _propertyForKey: (NSString*)key
 {
   return [this->properties objectForKey: key];

@@ -36,7 +36,6 @@
 #import "GSTLS.h"
 #import "GSURLPrivate.h"
 #import "GNUstepBase/GSMime.h"
-#import "GNUstepBase/NSData+GNUstepBase.h"
 #import "GNUstepBase/NSString+GNUstepBase.h"
 #import "GNUstepBase/NSURL+GNUstepBase.h"
 
@@ -46,7 +45,6 @@
 # undef	USE_ZLIB
 #endif
 #define	USE_ZLIB	0
-
 
 #if	USE_ZLIB
 #if	defined(HAVE_ZLIB_H)
@@ -67,78 +65,6 @@ zfree(void *opaque, void *mem)
 # define	USE_ZLIB	0
 #endif
 #endif
-
-static void
-debugRead(id handle, int len, const unsigned char *ptr)
-{
-  int           pos;
-  uint8_t       *hex;
-  NSUInteger    hl;
-
-  hl = ((len + 2) / 3) * 4;
-  hex = malloc(hl + 1);
-  hex[hl] = '\0';
-  GSPrivateEncodeBase64(ptr, (NSUInteger)len, hex);
-
-  for (pos = 0; pos < len; pos++)
-    {
-      if (0 == ptr[pos])
-        {
-          NSData        *data;
-          char          *esc;
-
-          data = [[NSData alloc] initWithBytesNoCopy: (void*)ptr
-                                              length: len
-                                        freeWhenDone: NO];
-          esc = [data escapedRepresentation: 0];
-
-          NSLog(@"Read for %p of %d bytes (escaped) - '%s'\n<[%s]>",
-            handle, len, esc, hex); 
-          free(esc);
-          RELEASE(data);
-          free(hex);
-          return;
-        }
-    }
-  NSLog(@"Read for %p of %d bytes - '%*.*s'\n<[%s]>",
-    handle, len, len, len, ptr, hex); 
-  free(hex);
-}
-static void
-debugWrite(id handle, int len, const unsigned char *ptr)
-{
-  int           pos;
-  uint8_t       *hex;
-  NSUInteger    hl;
-
-  hl = ((len + 2) / 3) * 4;
-  hex = malloc(hl + 1);
-  hex[hl] = '\0';
-  GSPrivateEncodeBase64(ptr, (NSUInteger)len, hex);
-
-  for (pos = 0; pos < len; pos++)
-    {
-      if (0 == ptr[pos])
-        {
-          NSData        *data;
-          char          *esc;
-
-          data = [[NSData alloc] initWithBytesNoCopy: (void*)ptr
-                                              length: len
-                                        freeWhenDone: NO];
-          esc = [data escapedRepresentation: 0];
-          NSLog(@"Write for %p of %d bytes (escaped) - '%s'\n<[%s]>",
-            handle, len, esc, hex); 
-          free(esc);
-          RELEASE(data);
-          free(hex);
-          return;
-        }
-    }
-  NSLog(@"Write for %p of %d bytes - '%*.*s'\n<[%s]>",
-    handle, len, len, len, ptr, hex); 
-  free(hex);
-}
 
 @interface	GSSocketStreamPair : NSObject
 {
@@ -352,6 +278,7 @@ static NSLock		*pairLock = nil;
   NSURLCredential		*_credential;
   NSHTTPURLResponse		*_response;
 }
+- (void) setDebug: (BOOL)flag;
 @end
 
 @interface _NSHTTPSURLProtocol : _NSHTTPURLProtocol
@@ -470,6 +397,28 @@ static NSURLProtocol	*placeholder = nil;
     }
   return NO;
 }
+
++ (Class) _classToHandleRequest:(NSURLRequest *)request
+{
+  Class protoClass = nil;
+  int count;
+  [regLock lock];
+
+  count = [registered count];
+  while (count-- > 0)
+    {
+      Class	proto = [registered objectAtIndex: count];
+
+      if ([proto canInitWithRequest: request] == YES)
+	{
+	  protoClass = proto;
+	  break;
+	}
+    }
+  [regLock unlock];
+  return protoClass;
+}
+
 
 + (void) setProperty: (id)value
 	      forKey: (NSString *)key
@@ -595,32 +544,16 @@ static NSURLProtocol	*placeholder = nil;
   return this->request;
 }
 
-@end
-
-@implementation	NSURLProtocol (Private)
-
-+ (Class) _classToHandleRequest:(NSURLRequest *)request
+/* This method is here so that it's safe to set debug on any NSURLProtocol
+ * even if the concrete subclass doesn't actually support debug logging.
+ */
+- (void) setDebug: (BOOL)flag
 {
-  Class protoClass = nil;
-  int count;
-  [regLock lock];
-
-  count = [registered count];
-  while (count-- > 0)
-    {
-      Class	proto = [registered objectAtIndex: count];
-
-      if ([proto canInitWithRequest: request] == YES)
-	{
-	  protoClass = proto;
-	  break;
-	}
-    }
-  [regLock unlock];
-  return protoClass;
+  return;
 }
 
 @end
+
 
 @implementation	NSURLProtocol (Subclassing)
 
@@ -698,12 +631,23 @@ static NSURLProtocol	*placeholder = nil;
   [super dealloc];
 }
 
+- (id) init
+{
+  if (nil != (self = [super init]))
+    {
+      _debug = GSDebugSet(@"NSURLProtocol");
+    }
+  return self;
+}
+
+- (void) setDebug: (BOOL)flag
+{
+  _debug = flag;
+}
+
 - (void) startLoading
 {
   static NSDictionary *methods = nil;
-
-  _debug = GSDebugSet(@"NSURLProtocol");
-  if (YES == [this->request _debug]) _debug = YES;
 
   if (methods == nil)
     {
@@ -943,7 +887,8 @@ static NSURLProtocol	*placeholder = nil;
     }
   if (_debug)
     {
-      debugRead(self, readCount, buffer);
+      NSLog(@"%@ read %d bytes: '%*.*s'",
+	self, readCount, readCount, readCount, buffer);
     }
 
   if (_parser == nil)
@@ -1509,25 +1454,14 @@ static NSURLProtocol	*placeholder = nil;
 		}
 	      if ([this->request valueForHTTPHeaderField: @"Host"] == nil)
 		{
-                  NSString      *s = [u scheme];
-		  id	        p = [u port];
-		  id	        h = [u host];
+		  id	p = [u port];
+		  id	h = [u host];
 
 		  if (h == nil)
 		    {
 		      h = @"";	// Must send an empty host header
 		    }
-                  if (([s isEqualToString: @"http"] && [p intValue] == 80)
-                    || ([s isEqualToString: @"https"] && [p intValue] == 443))
-                    {
-                      /* Some buggy systems object to the port being in
-                       * the Host header when it's the default (optional)
-                       * value.
-                       * To keep them happy let's omit it in those cases.
-                       */
-                      p = nil;
-                    }
-		  if (nil == p)
+		  if (p == nil)
 		    {
 		      [m appendFormat: @"Host: %@\r\n", h];
 		    }
@@ -1563,7 +1497,8 @@ static NSURLProtocol	*placeholder = nil;
 		    {
 		      if (_debug == YES)
 		        {
-                          debugWrite(self, written, bytes + _writeOffset);
+			  NSLog(@"%@ wrote %d bytes: '%*.*s'", self, written,
+			    written, written, bytes + _writeOffset);
 			}
 		      _writeOffset += written;
 		      if (_writeOffset >= len)
@@ -1620,7 +1555,8 @@ static NSURLProtocol	*placeholder = nil;
 			    {
 			      if (_debug == YES)
 				{
-                                  debugWrite(self, written, buffer);
+				  NSLog(@"%@ wrote %d bytes: '%*.*s'", self,
+				    written, written, written, buffer);
 				}
 			      len -= written;
 			      if (len > 0)
@@ -1631,17 +1567,6 @@ static NSURLProtocol	*placeholder = nil;
 				  _writeData = [[NSData alloc] initWithBytes:
 				    buffer + written length: len];
 				  _writeOffset = 0;
-				}
-			      else if (len == 0 && ![_body hasBytesAvailable])
-				{
-				  /* all _body's bytes are read and written
-                                   * so we shouldn't wait for another
-                                   * opportunity to close _body and set
-				   * the flag 'sent'.
-				   */
-				  [_body close];
-				  DESTROY(_body);
-				  sent = YES;
 				}
 			    }
                           else if ([this->output streamStatus]

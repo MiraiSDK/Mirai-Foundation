@@ -26,7 +26,7 @@
    Boston, MA 02111 USA.
 
    <title>NSConnection class reference</title>
-   $Date: 2015-06-04 17:18:52 +0800 (四, 04  6 2015) $ $Revision: 38599 $
+   $Date: 2014-03-26 15:56:09 +0800 (三, 26  3 2014) $ $Revision: 37768 $
    */
 
 #import "common.h"
@@ -346,10 +346,10 @@ GS_PRIVATE_INTERNAL(NSConnection)
 - (void) _failInRmc: (NSPortCoder*)c;
 - (void) _failOutRmc: (NSPortCoder*)c;
 - (NSPortCoder*) _getReplyRmc: (int)sn;
-- (NSPortCoder*) _newInRmc: (NSMutableArray*)components;
-- (NSPortCoder*) _newOutRmc: (int)sequence generate: (int*)sno reply: (BOOL)f;
+- (NSPortCoder*) _makeInRmc: (NSMutableArray*)components;
+- (NSPortCoder*) _makeOutRmc: (int)sequence generate: (int*)sno reply: (BOOL)f;
 - (void) _portIsInvalid: (NSNotification*)notification;
-- (void) _sendOutRmc: (NSPortCoder*) NS_CONSUMED c type: (int)msgid;
+- (void) _sendOutRmc: (NSPortCoder*)c type: (int)msgid;
 
 - (void) _service_forwardForProxy: (NSPortCoder*)rmc;
 - (void) _service_release: (NSPortCoder*)rmc;
@@ -1683,7 +1683,7 @@ static NSLock	*cached_proxies_gate = nil;
         {
           return [self rootObject];
         }
-      op = [self _newOutRmc: 0 generate: &seq_num reply: YES];
+      op = [self _makeOutRmc: 0 generate: &seq_num reply: YES];
       [self _sendOutRmc: op type: ROOTPROXY_REQUEST];
 
       ip = [self _getReplyRmc: seq_num];
@@ -2000,8 +2000,7 @@ static NSLock	*cached_proxies_gate = nil;
       if (ImultipleThreads == NO)
 	{
 	  [NSException raise: NSObjectInaccessibleException
-            format: @"Forwarding message for %p in wrong thread - %@",
-            object, inv];
+		      format: @"Forwarding message in wrong thread"];
 	}
       else
 	{
@@ -2026,7 +2025,7 @@ static NSLock	*cached_proxies_gate = nil;
   NSParameterAssert(type);
   NSParameterAssert(*type);
 
-  op = [self _newOutRmc: 0 generate: (int*)&seq reply: YES];
+  op = [self _makeOutRmc: 0 generate: (int*)&seq reply: YES];
 
   if (debug_connection > 4)
     NSLog(@"building packet seq %d", seq);
@@ -2222,7 +2221,7 @@ static NSLock	*cached_proxies_gate = nil;
 
   NSParameterAssert(IreceivePort);
   NSParameterAssert (IisValid);
-  op = [self _newOutRmc: 0 generate: &seq_num reply: YES];
+  op = [self _makeOutRmc: 0 generate: &seq_num reply: YES];
   [op encodeValueOfObjCType: ":" at: &sel];
   [op encodeValueOfObjCType: @encode(unsigned) at: &target];
   [self _sendOutRmc: op type: METHODTYPE_REQUEST];
@@ -2326,7 +2325,7 @@ static NSLock	*cached_proxies_gate = nil;
       RELEASE(d);
     }
 
-  rmc = [conn _newInRmc: components];
+  rmc = [conn _makeInRmc: components];
   if (debug_connection > 5)
     {
       NSLog(@"made rmc %p for %d", rmc, type);
@@ -2478,7 +2477,7 @@ static NSLock	*cached_proxies_gate = nil;
 
 	  /* Send out a root proxy request to ping the other end.
 	   */
-	  op = [self _newOutRmc: 0 generate: &IlastKeepalive reply: NO];
+	  op = [self _makeOutRmc: 0 generate: &IlastKeepalive reply: NO];
 	  IkeepaliveWait = YES;
 	  [self _sendOutRmc: op type: ROOTPROXY_REQUEST];
 	}
@@ -2764,7 +2763,7 @@ static NSLock	*cached_proxies_gate = nil;
       /* We create a new coder object and encode a flag to
        * say that this is not an exception.
        */
-      encoder = [self _newOutRmc: seq generate: 0 reply: NO];
+      encoder = [self _makeOutRmc: seq generate: 0 reply: NO];
       [encoder encodeValueOfObjCType: @encode(BOOL) at: &is_exception];
 
       /* Only encode return values if there is a non-void return value,
@@ -2882,7 +2881,7 @@ static NSLock	*cached_proxies_gate = nil;
 		{
 		  [self _failOutRmc: encoder];
 		}
-	      op = [self _newOutRmc: seq generate: 0 reply: NO];
+	      op = [self _makeOutRmc: seq generate: 0 reply: NO];
 	      [op encodeValueOfObjCType: @encode(BOOL)
 				     at: &is_exception];
 	      [op encodeBycopyObject: localException];
@@ -2911,7 +2910,7 @@ static NSLock	*cached_proxies_gate = nil;
 
   [rmc decodeValueOfObjCType: @encode(int) at: &sequence];
   [self _doneInRmc: rmc];
-  op = [self _newOutRmc: sequence generate: 0 reply: NO];
+  op = [self _makeOutRmc: sequence generate: 0 reply: NO];
   [op encodeObject: rootObject];
   [self _sendOutRmc: op type: ROOTPROXY_REPLY];
 }
@@ -2985,7 +2984,7 @@ static NSLock	*cached_proxies_gate = nil;
   NSParameterAssert (IisValid);
 
   [rmc decodeValueOfObjCType: @encode(int) at: &sequence];
-  op = [self _newOutRmc: sequence generate: 0 reply: NO];
+  op = [self _makeOutRmc: sequence generate: 0 reply: NO];
 
   [rmc decodeValueOfObjCType: @encode(typeof(target)) at: &target];
   [self _doneInRmc: rmc];
@@ -3019,7 +3018,7 @@ static NSLock	*cached_proxies_gate = nil;
       NSPortCoder	*op;
       int		sno;
 
-      op = [self _newOutRmc: 0 generate: &sno reply: NO];
+      op = [self _makeOutRmc: 0 generate: &sno reply: NO];
       [self _sendOutRmc: op type: CONNECTION_SHUTDOWN];
     }
   NS_HANDLER
@@ -3049,7 +3048,7 @@ static NSLock	*cached_proxies_gate = nil;
   NSParameterAssert (IisValid);
 
   [rmc decodeValueOfObjCType: @encode(int) at: &sequence];
-  op = [self _newOutRmc: sequence generate: 0 reply: NO];
+  op = [self _makeOutRmc: sequence generate: 0 reply: NO];
 
   [rmc decodeValueOfObjCType: ":" at: &sel];
   [rmc decodeValueOfObjCType: @encode(unsigned) at: &target];
@@ -3262,7 +3261,7 @@ static NSLock	*cached_proxies_gate = nil;
   IrepInCount++;
 }
 
-- (void) _doneInRmc: (NSPortCoder*) NS_CONSUMED c
+- (void) _doneInRmc: (NSPortCoder*)c
 {
   GS_M_LOCK(IrefGate);
   if (debug_connection > 5)
@@ -3316,7 +3315,7 @@ static NSLock	*cached_proxies_gate = nil;
   GSM_UNLOCK(IrefGate);
 }
 
-- (NSPortCoder*) _newInRmc: (NSMutableArray*)components
+- (NSPortCoder*) _makeInRmc: (NSMutableArray*)components
 {
   NSPortCoder	*coder;
   NSUInteger	count;
@@ -3351,7 +3350,7 @@ static NSLock	*cached_proxies_gate = nil;
  * rep		If this flag is YES, add a placeholder to the IreplyMap
  *		so we handle an incoming reply for this sequence number.
  */
-- (NSPortCoder*) _newOutRmc: (int)sno generate: (int*)ret reply: (BOOL)rep
+- (NSPortCoder*) _makeOutRmc: (int)sno generate: (int*)ret reply: (BOOL)rep
 {
   NSPortCoder	*coder;
   NSUInteger	count;
@@ -3651,7 +3650,7 @@ static NSLock	*cached_proxies_gate = nil;
 	  unsigned 	i;
 	  int		sequence;
 
-	  op = [self _newOutRmc: 0 generate: &sequence reply: NO];
+	  op = [self _makeOutRmc: 0 generate: &sequence reply: NO];
 
 	  [op encodeValueOfObjCType: @encode(unsigned) at: &number];
 
@@ -3820,7 +3819,7 @@ static NSLock	*cached_proxies_gate = nil;
 	      id	result;
 	      int	seq_num;
 
-	      op = [self _newOutRmc: 0 generate: &seq_num reply: YES];
+	      op = [self _makeOutRmc: 0 generate: &seq_num reply: YES];
 	      [op encodeValueOfObjCType: @encode(typeof(target)) at: &target];
 	      [self _sendOutRmc: op type: PROXY_RETAIN];
 
