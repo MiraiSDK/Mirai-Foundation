@@ -39,6 +39,21 @@ extern "C" {
 @class	NSURL;
 #endif
 
+#if OS_API_VERSION(MAC_OS_X_VERSION_10_9,GS_API_LATEST) 
+enum {
+  NSDataBase64DecodingIgnoreUnknownCharacters = (1UL << 0)
+};
+typedef NSUInteger NSDataBase64DecodingOptions;
+
+enum {
+  NSDataBase64Encoding64CharacterLineLength = (1UL << 0),
+  NSDataBase64Encoding76CharacterLineLength = (1UL << 1),
+  NSDataBase64EncodingEndLineWithCarriageReturn = (1UL << 4),
+  NSDataBase64EncodingEndLineWithLineFeed = (1UL << 5),
+};
+typedef NSUInteger NSDataBase64EncodingOptions;
+#endif
+
 #if OS_API_VERSION(MAC_OS_X_VERSION_10_4,GS_API_LATEST) 
 enum {
   NSMappedRead = 1,
@@ -73,6 +88,12 @@ enum {
 + (id) dataWithContentsOfURL: (NSURL*)url;
 #endif
 + (id) dataWithData: (NSData*)data;
+#if OS_API_VERSION(MAC_OS_X_VERSION_10_9,GS_API_LATEST) 
+- (id) initWithBase64EncodedData: (NSData*)base64Data
+                         options: (NSDataBase64DecodingOptions)options;
+- (id) initWithBase64EncodedString: (NSString*)base64String
+                           options: (NSDataBase64DecodingOptions)options;
+#endif
 - (id) initWithBytes: (const void*)aBuffer
 	      length: (NSUInteger)bufferSize;
 - (id) initWithBytesNoCopy: (void*)aBuffer
@@ -100,6 +121,12 @@ enum {
 	    range: (NSRange)aRange;
 - (NSData*) subdataWithRange: (NSRange)aRange;
 
+// base64
+#if OS_API_VERSION(MAC_OS_X_VERSION_10_9,GS_API_LATEST) 
+- (NSData *) base64EncodedDataWithOptions: (NSDataBase64EncodingOptions)options;
+- (NSString *) base64EncodedStringWithOptions: (NSDataBase64EncodingOptions)options;
+#endif
+ 
 // Querying a Data Object
 
 - (BOOL) isEqualToData: (NSData*)other;
@@ -230,6 +257,7 @@ enum {
 #define	_GSC_ULNG_LNG	0x0a
 #define	_GSC_FLT	0x0b
 #define	_GSC_DBL	0x0c
+#define	_GSC_BOOL       0x0d
 
 #define	_GSC_ID		0x10
 #define	_GSC_CLASS	0x11
