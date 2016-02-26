@@ -454,6 +454,8 @@ static NSDictionary *makeReference(unsigned ref)
       m = [[NSMutableData alloc] initWithCapacity: 10240];
       a = [[NSKeyedArchiver alloc] initForWritingWithMutableData: m];
       [a encodeObject: anObject forKey: @"root"];
+        //FIXME: NSPropertyListBinaryFormat_v1_0 is broken, use xml format to workaround
+      [a setOutputFormat:NSPropertyListXMLFormat_v1_0];
       [a finishEncoding];
       d = [m copy];
       DESTROY(m);
