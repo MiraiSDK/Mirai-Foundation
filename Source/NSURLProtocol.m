@@ -264,7 +264,6 @@ static NSLock		*pairLock = nil;
   <NSURLAuthenticationChallengeSender>
 {
   GSMimeParser		*_parser;	// Parser handling incoming data
-  unsigned		_parseOffset;	// Bytes of body loaded in parser.
   float			_version;	// The HTTP version in use.
   int			_statusCode;	// The HTTP status code returned.
   NSInputStream		*_body;		// for sending the body
@@ -744,7 +743,6 @@ static NSURLProtocol	*placeholder = nil;
       NSHost	*host = [NSHost hostWithName: [url host]];
       int	port = [[url port] intValue];
 
-      _parseOffset = 0;
       DESTROY(_parser);
 
       if (host == nil)
@@ -1279,15 +1277,10 @@ static NSURLProtocol	*placeholder = nil;
 	    {
 	      d = [_parser data];
 	      bodyLength = [d length];
-	      if (bodyLength > _parseOffset)
+	      if (bodyLength > 0)
 		{
-		  if (_parseOffset > 0)
-		    {
-		      d = [d subdataWithRange: 
-			NSMakeRange(_parseOffset, bodyLength - _parseOffset)];
-		    }
-		  _parseOffset = bodyLength;
 		  [self _didLoad: d];
+          [[_parser data] setLength:0];
 		}
 
 	      /* Check again in case the client cancelled the load inside
@@ -1309,15 +1302,10 @@ static NSURLProtocol	*placeholder = nil;
 	    {
 	      d = [_parser data];
 	      bodyLength = [d length];
-	      if (bodyLength > _parseOffset)
+	      if (bodyLength > 0)
 	        {
-		  if (_parseOffset > 0)
-		    {
-		      d = [d subdataWithRange: 
-			NSMakeRange(_parseOffset, [d length] - _parseOffset)];
-		    }
-		  _parseOffset = bodyLength;
-		  [self _didLoad: d];
+              [self _didLoad: d];
+              [[_parser data] setLength:0];
 		}
 	    }
 	}
