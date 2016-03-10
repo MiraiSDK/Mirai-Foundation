@@ -707,6 +707,7 @@ static inline BOOL timerInvalidated(NSTimer *t)
  * <code>NSConnectionReplyMode</code>, and certain modes used by the AppKit.</p>
  */
 @implementation NSRunLoop
+@synthesize delegate = _delegate;
 
 + (void) initialize
 {
@@ -1288,9 +1289,17 @@ updateTimer(NSTimer *t, NSDate *d, NSTimeInterval now)
       d = [d earlierDate: date];
     }
   [d retain];
+    
+    if (self.delegate) {
+        [self.delegate runloopWillSleep:self];
+    }
 
   /* Wait, listening to our input sources. */
   [self acceptInputForMode: mode beforeDate: d];
+    
+    if (self.delegate) {
+        [self.delegate runloopWillExit:self];
+    }
 
   [d release];
   [arp drain];

@@ -42,6 +42,13 @@ extern "C" {
 GS_EXPORT NSString * const NSDefaultRunLoopMode;
 GS_EXPORT NSString * const NSRunLoopCommonModes;
 
+//FIXME: hack to add callback to runloop
+@class NSRunLoop;
+@protocol RunLoopDelegate<NSObject>
+- (void)runloopWillSleep:(NSRunLoop *)r;
+- (void)runloopWillExit:(NSRunLoop *)r;
+@end
+    
 @interface NSRunLoop : NSObject
 {
 #if	GS_EXPOSE(NSRunLoop)
@@ -51,6 +58,7 @@ GS_EXPORT NSString * const NSRunLoopCommonModes;
   NSMutableArray	*_contextStack;
   NSMutableArray	*_timedPerformers;
   void			*_extra;
+  id _delegate;
 #endif
 }
 
@@ -77,6 +85,8 @@ GS_EXPORT NSString * const NSRunLoopCommonModes;
 - (NSDate*) limitDateForMode: (NSString*)mode;
 
 - (void) run;
+
+@property (nonatomic, assign) id<RunLoopDelegate> delegate;
 
 /**
  * Calls -limitDateForMode: to determine if a timeout occurs before the
