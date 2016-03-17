@@ -93,9 +93,6 @@ NSArchiver:
 NSAttributedString:
 	NSAttributedStringEnumerationReverse
   	NSAttributedStringEnumerationLongestEffectiveRangeNotRequired
-
-  	- enumerateAttributesInRange:options:usingBlock:
-	- enumerateAttribute:inRange:options:usingBlock:
 -------------------------------------------------------------
 NSBundle:
 	- bundleURL
