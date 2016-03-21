@@ -49,6 +49,12 @@
 #define __NSAttributedString_h_GNUSTEP_BASE_INCLUDE
 #import	<GNUstepBase/GSVersionMacros.h>
 
+enum {
+    NSAttributedStringEnumerationReverse = (1UL << 1),
+    NSAttributedStringEnumerationLongestEffectiveRangeNotRequired = (1UL << 20)
+};
+typedef NSUInteger NSAttributedStringEnumerationOptions;
+
 #if	defined(__cplusplus)
 extern "C" {
 #endif
@@ -96,6 +102,19 @@ extern "C" {
 
 //Extracting a substring
 - (NSAttributedString*) attributedSubstringFromRange: (NSRange)aRange;
+
+- (void)enumerateAttribute:(NSString *)attrName
+                   inRange:(NSRange)enumerationRange
+                   options:(NSAttributedStringEnumerationOptions)opts
+                usingBlock:(void (^)(id value,
+                                     NSRange range,
+                                     BOOL *stop))block;
+
+- (void)enumerateAttributesInRange:(NSRange)enumerationRange
+                           options:(NSAttributedStringEnumerationOptions)opts
+                        usingBlock:(void (^)(NSDictionary *attrs,
+                                             NSRange range,
+                                             BOOL *stop))block;
 
 @end //NSAttributedString
 

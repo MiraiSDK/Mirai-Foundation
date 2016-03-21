@@ -717,6 +717,88 @@ appendUIntData(NSMutableData *d, NSUInteger i)
   return newAttrString;
 }
 
+- (void)enumerateAttributesInRange:(NSRange)enumerationRange
+                           options:(NSAttributedStringEnumerationOptions)opts
+                        usingBlock:(void (^)(NSDictionary *attrs,
+                                             NSRange range,
+                                             BOOL *stop))block
+{
+    const NSUInteger EndIndex = enumerationRange.location + enumerationRange.length - 1;
+    const BOOL Reverse = (opts & NSAttributedStringEnumerationReverse);
+    const BOOL LongestEffectiveRangeNotRequired = opts & NSAttributedStringEnumerationLongestEffectiveRangeNotRequired;
+    
+    NSUInteger pos = Reverse? EndIndex: enumerationRange.location;
+    BOOL stop = NO;
+    
+    while (Reverse? pos >= enumerationRange.location: pos <= EndIndex) {
+        NSRange effectiveRange = NSMakeRange(0, 0);
+        NSDictionary *attrs;
+        
+        if (LongestEffectiveRangeNotRequired) {
+            attrs = [self attributesAtIndex:enumerationRange.location effectiveRange:&effectiveRange];
+        } else {
+            attrs = [self attributesAtIndex:pos longestEffectiveRange:&effectiveRange inRange:enumerationRange];
+        }
+        
+        block(attrs, effectiveRange, &stop);
+        
+        if (stop) {
+            break;
+        }
+        if (effectiveRange.length == 0) {
+            NSLog(@"[Warning] get zero attributes range of '%@'", self.string);
+            effectiveRange.length = 1;
+        }
+        if (Reverse) {
+            pos = effectiveRange.location - 1;
+        } else {
+            pos = effectiveRange.location + effectiveRange.length;
+        }
+    }
+}
+
+- (void)enumerateAttribute:(NSString *)attrName
+                   inRange:(NSRange)enumerationRange
+                   options:(NSAttributedStringEnumerationOptions)opts
+                usingBlock:(void (^)(id value,
+                                     NSRange range,
+                                     BOOL *stop))block
+{
+    const NSUInteger EndIndex = enumerationRange.location + enumerationRange.length - 1;
+    const BOOL Reverse = (opts & NSAttributedStringEnumerationReverse);
+    const BOOL LongestEffectiveRangeNotRequired = opts & NSAttributedStringEnumerationLongestEffectiveRangeNotRequired;
+    
+    NSUInteger pos = Reverse? EndIndex: enumerationRange.location;
+    BOOL stop = NO;
+    
+    while (Reverse? pos >= enumerationRange.location: pos <= EndIndex) {
+        NSRange effectiveRange = NSMakeRange(0, 0);
+        NSDictionary *attrs;
+        
+        if (LongestEffectiveRangeNotRequired) {
+            attrs = [self attribute:attrName atIndex:pos effectiveRange:&effectiveRange];
+        } else {
+            attrs = [self attribute:attrName atIndex:pos longestEffectiveRange:&effectiveRange inRange:enumerationRange];
+        }
+        
+        block(attrs, effectiveRange, &stop);
+        
+        if (stop) {
+            break;
+        }
+        if (effectiveRange.length == 0) {
+            NSLog(@"[Warning] get zero attributes range of '%@'", self.string);
+            effectiveRange.length = 1;
+        }
+        if (Reverse) {
+            pos = effectiveRange.location - 1;
+        } else {
+            pos = effectiveRange.location + effectiveRange.length;
+        }
+    }
+}
+
+
 @end //NSAttributedString
 
 /**
