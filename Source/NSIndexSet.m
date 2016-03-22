@@ -29,6 +29,7 @@
 #import "Foundation/NSData.h"
 #import	"Foundation/NSIndexSet.h"
 #import	"Foundation/NSException.h"
+#define GS_USE_LIBDISPATCH 0
 #import "GSDispatch.h"
 
 #define	GSI_ARRAY_TYPE	NSRange

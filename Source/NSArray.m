@@ -51,6 +51,7 @@
 #import "Foundation/NSKeyedArchiver.h"
 #import "GSPrivate.h"
 #import "GSFastEnumeration.h"
+#define GS_USE_LIBDISPATCH 0
 #import "GSDispatch.h"
 #import "GSSorting.h"
 
